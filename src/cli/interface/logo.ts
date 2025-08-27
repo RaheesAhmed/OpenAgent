@@ -109,7 +109,7 @@ export function createWelcomeMessage(): string {
   return `
 ${primary('Ready to code.')}
 
-${muted('Run "openclaude --help" for commands.')}
+${muted('Just run "openclaude" to start.')}
 `;
 }
 
