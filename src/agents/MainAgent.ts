@@ -80,10 +80,8 @@ export class MainAgent {
       const maxLoops = 10; // Prevent infinite loops
       
       while (loopCount < maxLoops) {
-        console.log(`\n[DEBUG] ===========================================`);
-        console.log(`[DEBUG] Starting loop ${loopCount + 1}/${maxLoops}`);
-        console.log(`[DEBUG] Current conversation messages: ${messages.length}`);
         loopCount++;
+        
         // Use streaming for real-time response
         const stream = await this.anthropic.messages.stream({
           model: this.config.model,
@@ -103,27 +101,10 @@ export class MainAgent {
         
         // Check if Claude used any tools that need execution
         if (response.toolUses && response.toolUses.length > 0) {
-          console.log(`\n[DEBUG] ✨ CLAUDE REQUESTED ${response.toolUses.length} TOOLS:`);
-          for (let i = 0; i < response.toolUses.length; i++) {
-            const tool = response.toolUses[i];
-            if (tool) {
-              console.log(`[DEBUG] Tool ${i + 1}: ${tool.name}`);
-              console.log(`[DEBUG] Tool Input:`, JSON.stringify(tool.input, null, 2));
-              if ((tool as any).inputJson) {
-                console.log(`[DEBUG] Streamed JSON Input:`, (tool as any).inputJson);
-              }
-            }
-          }
-          
           // Execute tools and add results to conversation
-          console.log(`\n[DEBUG] 🔧 EXECUTING TOOLS...`);
           const toolResults = await this.executeTools(response.toolUses);
-          console.log(`[DEBUG] 📊 TOOL EXECUTION COMPLETED`);
-          console.log(`[DEBUG] Tool Results (formatted):`);
-          console.log(toolResults);
           
           // Add Claude's response with tool uses to conversation
-          // Need to include both text content and tool_use content blocks
           const assistantContent = [];
           
           // Add text content if any
@@ -150,7 +131,6 @@ export class MainAgent {
           });
           
           // Add tool results as properly formatted user message
-          // Parse the JSON and create proper content blocks
           const parsedResults = JSON.parse(toolResults);
           const toolResultContent = parsedResults.map((result: any) => ({
             type: 'tool_result' as const,
@@ -163,21 +143,10 @@ export class MainAgent {
             content: toolResultContent
           });
           
-          console.log(`\n[DEBUG] 💬 CONVERSATION UPDATE:`);
-          console.log(`[DEBUG] Total messages now: ${messages.length}`);
-          console.log(`[DEBUG] Assistant message (Claude's response):`);
-          console.log(JSON.stringify(messages[messages.length - 2], null, 2));
-          console.log(`[DEBUG] User message (tool results):`);
-          console.log(JSON.stringify(messages[messages.length - 1].content, null, 2));
-          console.log(`[DEBUG] Continuing conversation to get Claude's follow-up response...`);
-          
           // Continue the conversation - Claude should provide a follow-up response
           continue;
         } else {
           // No more tools to execute, we're done
-          console.log(`\n[DEBUG] ✅ CONVERSATION COMPLETE - NO MORE TOOLS REQUESTED`);
-          console.log(`[DEBUG] Final response length: ${finalResponse.length} characters`);
-          console.log(`[DEBUG] Total loops used: ${loopCount}/${maxLoops}`);
           break;
         }
       }
@@ -306,15 +275,28 @@ export class MainAgent {
             }
           } else if (event.content_block.type === 'server_tool_use') {
             // Server-side tools (web search) - handled automatically by Claude
-            if (globalStreamingHandler) {
-              globalStreamingHandler.start('Searching the web');
+            if (event.content_block.name === 'web_search') {
+              if (globalStreamingHandler) {
+                globalStreamingHandler.start('Searching the web');
+              }
             }
           } else if (event.content_block.type === 'web_search_tool_result') {
             // Web search results received
             const results = event.content_block.content;
             if (Array.isArray(results) && results.length > 0) {
               if (globalStreamingHandler) {
-                globalStreamingHandler.showUpdate(`Found ${results.length} search results`, 'success');
+                globalStreamingHandler.complete(`Found ${results.length} search results`);
+              }
+              // Show clean web search result info
+              console.log(chalk.green(`\n🔍 Web Search Results:`));
+              results.slice(0, 3).forEach((result: any, index: number) => {
+                if (result.url && result.title) {
+                  console.log(chalk.dim(`   ${index + 1}. ${result.title}`));
+                  console.log(chalk.dim(`      ${result.url}`));
+                }
+              });
+              if (results.length > 3) {
+                console.log(chalk.dim(`   ... and ${results.length - 3} more results`));
               }
             }
           }
@@ -384,79 +366,144 @@ export class MainAgent {
   private async executeTools(toolUses: any[]): Promise<string> {
     const toolResults = [];
     
-    for (let i = 0; i < toolUses.length; i++) {
-      const toolUse = toolUses[i];
+    for (const toolUse of toolUses) {
       try {
-        console.log(`\n[DEBUG] 🛠️  EXECUTING TOOL ${i + 1}/${toolUses.length}: ${toolUse.name}`);
-        console.log(`[DEBUG] Tool ID: ${toolUse.id}`);
-        let result = '';
+        // Display clean tool usage information like Claude Code
+        this.displayToolUsage(toolUse);
         
-        // Tool input is already properly parsed in handleStreamResponse
+        let result = '';
         let input = toolUse.input || {};
-        console.log(`[DEBUG] 📥 TOOL INPUT PROCESSING:`);
-        console.log(`[DEBUG] Final input:`, JSON.stringify(input, null, 2));
         
         // Check for any JSON parsing errors from streaming
         if (toolUse.inputJsonError) {
-          console.log(`[DEBUG] ❌ Tool had JSON parsing error: ${toolUse.inputJsonError}`);
           result = `Error: Failed to parse tool parameters - ${toolUse.inputJsonError}`;
         } else {
           // Execute custom tool
-          console.log(`[DEBUG] 🚀 CALLING executeCustomTool`);
-          console.log(`[DEBUG] Tool name: ${toolUse.name}`);
-          console.log(`[DEBUG] Tool input:`, JSON.stringify(input, null, 2));
-          
           const toolResult = await executeCustomTool(toolUse.name, input);
-          
-          console.log(`[DEBUG] 📋 TOOL EXECUTION RESULT:`);
-          console.log(`[DEBUG] Success: ${toolResult.success}`);
-          console.log(`[DEBUG] Content length: ${toolResult.content?.length || 0} chars`);
-          console.log(`[DEBUG] Error: ${toolResult.error || 'None'}`);
-          console.log(`[DEBUG] Full result:`, JSON.stringify(toolResult, null, 2));
           
           if (toolResult.success) {
             result = toolResult.content;
+            // Show successful tool completion
+            this.displayToolResult(toolUse.name, result);
           } else {
             result = toolResult.error || 'Unknown tool error';
+            console.log(chalk.red(`✗ ${toolUse.name} failed: ${result}`));
           }
         }
         
-        const toolResultForClaude = {
+        toolResults.push({
           type: 'tool_result',
           tool_use_id: toolUse.id,
           content: result
-        };
-        
-        console.log(`[DEBUG] 📤 ADDING TOOL RESULT TO CONVERSATION:`);
-        console.log(JSON.stringify(toolResultForClaude, null, 2));
-        
-        toolResults.push(toolResultForClaude);
+        });
         
       } catch (error) {
-        console.log(`[DEBUG] ❌ TOOL EXECUTION ERROR for ${toolUse.name}:`, error);
-        const errorResult = {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.log(chalk.red(`✗ ${toolUse.name} error: ${errorMessage}`));
+        
+        toolResults.push({
           type: 'tool_result', 
           tool_use_id: toolUse.id,
-          content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          content: `Error: ${errorMessage}`,
           is_error: true
-        };
-        console.log(`[DEBUG] Error result:`, JSON.stringify(errorResult, null, 2));
-        toolResults.push(errorResult);
+        });
       }
     }
     
-    const resultString = JSON.stringify(toolResults, null, 2);
-    console.log(`\n[DEBUG] 🎯 FINAL TOOL RESULTS FOR CLAUDE:`);
-    console.log(`[DEBUG] Number of results: ${toolResults.length}`);
-    console.log(`[DEBUG] Results JSON length: ${resultString.length} characters`);
-    console.log(`[DEBUG] Complete JSON:`);
-    console.log(resultString);
-    console.log(`[DEBUG] ===========================================\n`);
-    return resultString;
+    return JSON.stringify(toolResults, null, 2);
+  }
+
+  /**
+   * Display clean tool usage information
+   */
+  private displayToolUsage(toolUse: any): void {
+    const toolName = toolUse.name;
+    const input = toolUse.input || {};
+    
+    // Format tool usage display like Claude Code
+    switch (toolName) {
+      case 'read_file':
+        console.log(chalk.blue(`\n📖 Reading ${input.path || 'file'}`));
+        break;
+      case 'create_file':
+        console.log(chalk.green(`\n📝 Creating ${input.path || 'file'}`));
+        break;
+      case 'search_replace':
+        console.log(chalk.yellow(`\n✏️  Editing ${input.path || 'file'}`));
+        break;
+      case 'delete_file':
+        console.log(chalk.red(`\n🗑️  Deleting ${input.path || 'file'}`));
+        break;
+      case 'list_directory':
+        console.log(chalk.cyan(`\n📁 Listing ${input.path || 'directory'}`));
+        break;
+      case 'terminal':
+        console.log(chalk.magenta(`\n💻 Running: ${input.command || 'command'}`));
+        break;
+      case 'web_search':
+        console.log(chalk.green(`\n🔍 Searching: ${input.query || 'web search'}`));
+        break;
+      default:
+        console.log(chalk.gray(`\n🔧 Using ${toolName}`));
+        if (Object.keys(input).length > 0) {
+          const params = Object.entries(input)
+            .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+            .join(', ');
+          console.log(chalk.dim(`   ${params}`));
+        }
+    }
+  }
+
+  /**
+   * Display tool result in a clean format
+   */
+  private displayToolResult(toolName: string, result: string): void {
+    switch (toolName) {
+      case 'read_file':
+        const lines = result.split('\n').length;
+        console.log(chalk.dim(`   └── Read ${lines} lines`));
+        break;
+      case 'create_file':
+        console.log(chalk.dim(`   └── File created successfully`));
+        break;
+      case 'search_replace':
+        console.log(chalk.dim(`   └── File updated successfully`));
+        break;
+      case 'delete_file':
+        console.log(chalk.dim(`   └── File deleted successfully`));
+        break;
+      case 'list_directory':
+        const items = result.split('\n').filter(line => line.trim()).length;
+        console.log(chalk.dim(`   └── Found ${items} items`));
+        break;
+      case 'terminal':
+        if (result.length > 200) {
+          console.log(chalk.dim(`   └── Command executed (${result.length} chars output)`));
+        } else if (result.trim()) {
+          console.log(chalk.dim(`   └── ${result.trim()}`));
+        } else {
+          console.log(chalk.dim(`   └── Command completed`));
+        }
+        break;
+      default:
+        if (result.length > 100) {
+          console.log(chalk.dim(`   └── Completed (${result.length} chars)`));
+        } else {
+          console.log(chalk.dim(`   └── ${result.substring(0, 100)}${result.length > 100 ? '...' : ''}`));
+        }
+    }
   }
   
   private getAvailableTools(): any[] {
-    return allToolDefinitions;
+    // Add built-in web search tool along with custom tools
+    const webSearchTool = {
+      type: "web_search_20250305",
+      name: "web_search",
+      max_uses: 5, // Limit searches per request
+      // Optional: Can add domain filtering or localization here
+    };
+    
+    return [...allToolDefinitions, webSearchTool];
   }
 
   /**
