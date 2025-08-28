@@ -207,14 +207,7 @@ You: Help me debug this TypeScript error in src/components/Header.tsx
 
 ### Available Scripts
 - `npm run build`: Compile TypeScript  
-- `npm run build:watch`: Watch mode compilation
 - `npm run dev`: Development mode with ts-node
-- `npm run start`: Run compiled version
-- `npm run test`: Run Jest tests
-- `npm run test:watch`: Watch mode testing
-- `npm run lint`: ESLint code checking
-- `npm run lint:fix`: Auto-fix ESLint issues
-- `npm run clean`: Remove dist directory
 
 ### Code Quality
 - TypeScript with strict configuration
