@@ -61,10 +61,12 @@ async function startInteractiveChat(): Promise<void> {
         
         const response = await agentManager.processMessage(message);
         
-        // Show completion
-        streamingHandler.complete('Response ready');
+        // Only show completion if the handler is still running
+        // (if it was stopped by streaming, don't show completion message)
+        if (streamingHandler.isRunning()) {
+          streamingHandler.complete('Response complete');
+        }
        
-        
         // The response content was already streamed by the agent
         console.log();
         
