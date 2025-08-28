@@ -7,7 +7,7 @@
     <a href="https://github.com/RaheesAhmed/open-claude/stargazers"><img src="https://img.shields.io/github/stars/RaheesAhmed/open-claude?style=flat-square" alt="Stars"></a>
     <a href="https://github.com/RaheesAhmed/open-claude/network/members"><img src="https://img.shields.io/github/forks/RaheesAhmed/open-claude?style=flat-square" alt="Forks"></a>
     <a href="https://github.com/RaheesAhmed/open-claude/issues"><img src="https://img.shields.io/github/issues/RaheesAhmed/open-claude?style=flat-square" alt="Issues"></a>
-    <a href="https://github.com/RaheesAhmed/open-claude/blob/main/LICENSE"><img src="https://img.shields.io/github/license/RaheesAhmed/open-claude?style=flat-square" alt="License"></a>
+    <a href="https://github.com/RaheesAhmed/open-claude/blob/main/LICENSE"><img src="https://img.shields.io/github/license/RaheesAhmed/open-claude?style=flat-square" alt="MIT License"></a>
   </p>
   
   <p>Built with TypeScript and the Anthropic SDK • Terminal-based AI coding assistant • Autonomous code generation • Deep codebase understanding • Professional development workflows</p>
@@ -242,7 +242,9 @@ We welcome contributions! Here's how to get started:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for full details.
+
+The MIT License is a permissive open-source license that allows you to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the software.
 
 ## Support
 
