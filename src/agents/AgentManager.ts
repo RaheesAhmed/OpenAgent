@@ -1,5 +1,6 @@
 import { MainAgent } from './MainAgent.js';
 import { AgentContext } from '../types/agent.js';
+import { ProjectSetup } from '../core/setup/ProjectSetup.js';
 
 /**
  * Simple agent manager for the single main agent
@@ -21,6 +22,14 @@ export class AgentManager {
    * Initialize the main agent
    */
   public async initialize(apiKey: string, projectPath: string): Promise<void> {
+    // Initialize project setup (creates .openclaude folder and config files)
+    const projectSetup = new ProjectSetup(projectPath);
+    await projectSetup.initialize();
+    
+    // Load MCP servers and custom rules
+    const mcpServers = await projectSetup.loadMcpServers();
+    const customRules = await projectSetup.loadCustomRules();
+
     const context: AgentContext = {
       projectPath,
       workingDirectory: projectPath,
@@ -72,7 +81,7 @@ export class AgentManager {
       }
     };
 
-    this.mainAgent = new MainAgent(apiKey, context);
+    this.mainAgent = new MainAgent(apiKey, context, mcpServers, customRules);
   }
 
   /**

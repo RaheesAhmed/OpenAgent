@@ -14,10 +14,14 @@ export class MainAgent {
   private anthropic: Anthropic;
   private config: AgentConfig;
   private tokenCounter: TokenCounter;
+  private mcpServers: any[];
+  private customRules: string;
 
-  constructor(apiKey: string, _context: AgentContext) {
+  constructor(apiKey: string, _context: AgentContext, mcpServers: any[] = [], customRules: string = '') {
     this.anthropic = new Anthropic({ apiKey });
     this.tokenCounter = new TokenCounter(apiKey);
+    this.mcpServers = mcpServers;
+    this.customRules = customRules;
     
     this.config = {
       id: "openclaude-main",
@@ -25,7 +29,7 @@ export class MainAgent {
       description:
         "Advanced AI development assistant that handles all coding tasks",
       model: "claude-sonnet-4-20250514",
-      systemPrompt: OPENCLAUDE_SYSTEM_PROMPT,
+      systemPrompt: this.buildSystemPrompt(),
       tools: this.getAvailableTools(),
       capabilities: [
         {
@@ -82,15 +86,28 @@ export class MainAgent {
       while (loopCount < maxLoops) {
         loopCount++;
         
-        // Use streaming for real-time response
-        const stream = await this.anthropic.messages.stream({
+        // Prepare the request with MCP servers if available
+        const requestOptions: any = {
           model: this.config.model,
           max_tokens: this.config.maxTokens,
           temperature: this.config.temperature,
           system: this.config.systemPrompt,
           messages: messages,
           tools: this.config.tools
-        });
+        };
+
+        // Add MCP servers if configured
+        if (this.mcpServers && this.mcpServers.length > 0) {
+          requestOptions.mcp_servers = this.mcpServers;
+        }
+
+        // Use streaming for real-time response
+        const stream = await this.anthropic.messages.stream(
+          requestOptions,
+          this.mcpServers && this.mcpServers.length > 0 ? {
+            headers: { 'anthropic-beta': 'mcp-client-2025-04-04' }
+          } : {}
+        );
 
         const response = await this.handleStreamResponse(stream, startTime);
         finalResponse += response.content;
@@ -494,6 +511,25 @@ export class MainAgent {
     }
   }
   
+  /**
+   * Build system prompt with custom rules and MCP information
+   */
+  private buildSystemPrompt(): string {
+    let prompt = OPENCLAUDE_SYSTEM_PROMPT;
+    
+    // Add custom rules if available
+    if (this.customRules && this.customRules.trim()) {
+      prompt += `\n\nPROJECT-SPECIFIC RULES AND GUIDELINES:\n${this.customRules}`;
+    }
+    
+    // Add MCP server information if available
+    if (this.mcpServers && this.mcpServers.length > 0) {
+      prompt += `\n\nMCP SERVERS AVAILABLE:\nYou have access to additional tools from ${this.mcpServers.length} MCP server(s). These tools will be made available automatically when needed.`;
+    }
+    
+    return prompt;
+  }
+
   private getAvailableTools(): any[] {
     // Add built-in web search tool along with custom tools
     const webSearchTool = {
