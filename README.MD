@@ -10,7 +10,7 @@
     <a href="https://github.com/RaheesAhmed/open-claude/blob/main/LICENSE"><img src="https://img.shields.io/github/license/RaheesAhmed/open-claude?style=flat-square" alt="MIT License"></a>
   </p>
   
-  <p>Built with TypeScript and the Anthropic SDK • Terminal-based AI coding assistant • Autonomous code generation • Deep codebase understanding • Professional development workflows</p>
+  <p>UNDER ACTIVE DEVELOPMENT</p>
 </div>
 
 ## About Claude Code vs OpenClaude
