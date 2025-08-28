@@ -1,7 +1,7 @@
 <div align="center">
-  <h1>🤖 OpenClaude</h1>
+  <img src="assets/openclaude.svg" alt="OpenClaude Logo" width="256" height="256"/>
   
-  <p><strong>Advanced open-source AI development assistant</strong></p>
+  <p><strong>Advanced open-source AI development assistant inspired by Claude Code</strong></p>
   
   <p>
     <a href="https://github.com/RaheesAhmed/open-claude/stargazers"><img src="https://img.shields.io/github/stars/RaheesAhmed/open-claude?style=flat-square" alt="Stars"></a>
@@ -10,26 +10,32 @@
     <a href="https://github.com/RaheesAhmed/open-claude/blob/main/LICENSE"><img src="https://img.shields.io/github/license/RaheesAhmed/open-claude?style=flat-square" alt="License"></a>
   </p>
   
-  <p>Built with TypeScript and the Anthropic SDK • Intelligent code assistance • File operations • Terminal integration • Web search capabilities</p>
+  <p>Built with TypeScript and the Anthropic SDK • Terminal-based AI coding assistant • Autonomous code generation • Deep codebase understanding • Professional development workflows</p>
 </div>
+
+## About Claude Code vs OpenClaude
+
+**Claude Code** is Anthropic's official terminal-based AI coding assistant launched in February 2025. It operates as an autonomous agent powered by Claude Opus 4.1 and Sonnet 4 models, providing deep codebase awareness and the ability to edit files and run commands directly in your terminal environment.
+
+**OpenClaude** is our open-source implementation inspired by Claude Code's capabilities, designed to provide similar functionality with additional customization options and transparent architecture.
 
 ## Features
 
 ### Core Capabilities
-- **Interactive Chat Interface**: Real-time streaming responses with professional CLI styling
+- **Terminal-Based Operation**: Command-line AI assistant that integrates with your existing development workflow
+- **Autonomous Code Generation**: AI agent that can understand requirements and implement solutions across multiple files
+- **Deep Codebase Awareness**: Comprehensive understanding of project structure, dependencies, and coding patterns
 - **File System Operations**: Read, create, edit, and delete files with intelligent content handling
-- **Terminal Integration**: Execute commands directly from the chat interface
-- **Web Search**: Real-time web search for current documentation and information
-- **Cost Tracking**: Transparent token usage and cost calculation
-- **Project Context**: Automatic project structure analysis and memory persistence
+- **Command Execution**: Run terminal commands, tests, and build scripts through natural language instructions
+- **Version Control Integration**: Git operations including commits, branches, and pull request management
 
 ### Advanced Features
-- **MCP Server Integration**: Extensible through Model Context Protocol servers
-- **Custom Project Rules**: Per-project configuration via `.openclaude/rules.md`
-- **Token Optimization**: Intelligent context management to minimize API costs
-- **Streaming Responses**: Real-time output with tool execution feedback
-- **Error Recovery**: Robust error handling with graceful degradation
-- **Security**: Local API key storage with encryption
+- **MCP Server Integration**: Extensible through Model Context Protocol servers for additional tools and services
+- **Custom Project Rules**: Per-project configuration via `.openclaude/rules.md` for coding standards and preferences
+- **Multi-file Coordination**: Make coordinated changes across multiple files while maintaining consistency
+- **GitHub Integration**: Direct interaction with GitHub for issues, PRs, and repository management
+- **Security Scanning**: Automated security review capabilities for code vulnerability detection
+- **Context Optimization**: Intelligent context management to minimize token usage and API costs
 
 ## Quick Start
 
