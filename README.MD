@@ -8,6 +8,7 @@
   [![Claude](https://img.shields.io/badge/Claude-4A4A4A?style=for-the-badge&logo=anthropic&logoColor=white)](https://www.anthropic.com/)
   [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
   
+  🚧 **Under active development - More features coming soon!** 🚧
   
 </div>
 
