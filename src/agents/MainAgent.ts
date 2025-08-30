@@ -427,7 +427,7 @@ export class MainAgent {
             process.stdout.write(event.delta.text);
             fullContent += event.delta.text;
           } else if (event.delta.type === 'input_json_delta') {
-            // Handle tool input streaming - accumulate tool parameters by content block index
+            // Handle tool input streaming - accumulate and display tool parameters in real-time
             const blockIndex = event.index;
             if (contentBlocks.has(blockIndex)) {
               const block = contentBlocks.get(blockIndex);
@@ -435,6 +435,9 @@ export class MainAgent {
                 block.inputJson = '';
               }
               block.inputJson += event.delta.partial_json;
+              
+              // Stream the tool parameters to the user in real-time
+              process.stdout.write(chalk.dim(event.delta.partial_json));
             }
           }
         } else if (event.type === 'content_block_start') {
