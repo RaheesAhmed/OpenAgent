@@ -186,12 +186,6 @@ You: Read the package.json file and show me the dependencies
 You: Set up a new Express.js API with TypeScript, including error handling and logging
 ```
 
-### File Attachment with @
-```
-You: @ Please review these components and suggest improvements
-```
-*Opens interactive file picker to select multiple files*
-
 ### Debugging Assistance
 ```
 You: Help me debug this TypeScript error in src/components/Header.tsx

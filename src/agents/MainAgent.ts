@@ -3,6 +3,9 @@ import chalk from 'chalk';
 import { AgentConfig, AgentResponse, AgentContext } from '../types/agent.js';
 import { OPENCLAUDE_SYSTEM_PROMPT } from "../prompts/openclaude_prompt.js";
 import { TokenCounter } from '../core/tokens/TokenCounter.js';
+import { ContextManager } from '../core/context/ContextManager.js';
+import { TokenOptimizer } from '../core/optimization/TokenOptimizer.js';
+import { ValidationEngine } from '../core/validation/ValidationEngine.js';
 import { allToolDefinitions } from '../tools/index.js';
 import { executeCustomTool } from '../tools/executor.js';
 import { MemoryIntegration } from '../memory/index.js';
@@ -15,6 +18,9 @@ export class MainAgent {
   private anthropic: Anthropic;
   private config: AgentConfig;
   private tokenCounter: TokenCounter;
+  private contextManager: ContextManager;
+  private tokenOptimizer: TokenOptimizer;
+  private validationEngine: ValidationEngine;
   private mcpServers: any[];
   private customRules: string;
   private memory: MemoryIntegration;
@@ -26,6 +32,19 @@ export class MainAgent {
     this.mcpServers = mcpServers;
     this.customRules = customRules;
     this.context = context;
+    
+    // Initialize advanced systems
+    this.contextManager = new ContextManager(context.projectPath, apiKey);
+    this.tokenOptimizer = new TokenOptimizer(context.projectPath);
+    this.validationEngine = new ValidationEngine(context.projectPath, {
+      enabled: true,
+      strictMode: false,
+      securityScanEnabled: true,
+      performanceCheckEnabled: true,
+      hallucinationDetectionEnabled: true,
+      maxValidationTime: 30000,
+      qualityThreshold: 0.8
+    });
     
     // Initialize memory system
     this.memory = new MemoryIntegration(context.projectPath, context.session.id);
@@ -80,13 +99,62 @@ export class MainAgent {
     const startTime = Date.now();
 
     try {
+      // Initialize systems if not done yet
+      await this.ensureSystemsInitialized();
+
+      // Update conversation context with user message
+      await this.contextManager.updateConversation('user', message);
+      await this.contextManager.updateUser(message, [], {});
+
       // Get contextual memories to enhance response
       const memoryContext = await this.memory.getContextualMemories(message, this.context);
       
-      // Build enhanced message with memory context
+      // Build enhanced message with memory context and context summary
       let userContent = message;
       if (memoryContext.trim()) {
-        userContent += memoryContext;
+        userContent += '\n\n' + memoryContext;
+      }
+      
+      // Add context summary for better continuity
+      const contextSummary = this.contextManager.getContextSummary();
+      if (contextSummary.trim()) {
+        userContent += '\n\n' + contextSummary;
+      }
+
+      // Optimize the content for token efficiency
+      let optimizationResult;
+      try {
+        optimizationResult = await this.tokenOptimizer.optimizeRequest(
+          userContent,
+          { 
+            conversation: true,
+            projectContext: this.contextManager.getCurrentState()?.project,
+            previousMessages: this.contextManager.getCurrentState()?.conversation.messages.slice(-5)
+          },
+          this.config.model
+        );
+      } catch (optimizerError) {
+        // Create a fallback optimization result if optimizer fails
+        optimizationResult = {
+          optimizedContent: userContent,
+          originalTokens: Math.ceil(userContent.length / 4),
+          optimizedTokens: Math.ceil(userContent.length / 4),
+          savings: {
+            savedTokens: 0,
+            compressionRatio: 1.0,
+            costSavings: 0,
+            optimizationTime: 0
+          },
+          cacheHits: []
+        };
+      }
+
+      // Use optimized content
+      userContent = optimizationResult.optimizedContent;
+      
+      // Display optimization savings
+      if (optimizationResult.savings.savedTokens > 0) {
+        //console.log(chalk.green(`🔧 Token optimization: Saved ${optimizationResult.savings.savedTokens} tokens (${(optimizationResult.savings.compressionRatio * 100).toFixed(1)}% compression)`));
       }
 
       let messages: Array<any> = [
@@ -225,10 +293,107 @@ export class MainAgent {
         console.warn('Warning: Failed to store interaction in memory:', memoryError);
       }
 
+      // Update context with assistant response
+      await this.contextManager.updateConversation('assistant', finalResponse);
+      await this.contextManager.updateAI(
+        this.config.model,
+        response.metadata.confidence,
+        [`Generated response with ${response.content.length} characters`],
+        this.extractToolNamesFromMessages(messages)
+      );
+
+      // Track token usage with optimizer
+      await this.tokenOptimizer.trackUsage(
+        totalUsage.input_tokens,
+        totalUsage.output_tokens,
+        this.config.model,
+        optimizationResult.cacheHits.length > 0 ? optimizationResult.savings.savedTokens : 0
+      );
+
+      // Validate any generated code
+      await this.validateGeneratedCode(finalResponse);
+
       return response;
     } catch (error) {
       return this.createErrorResponse(error as Error, startTime);
     }
+  }
+
+  /**
+   * Ensure all systems are properly initialized
+   */
+  private async ensureSystemsInitialized(): Promise<void> {
+    try {
+      // Initialize context manager with session
+      await this.contextManager.initialize(this.context.session.id);
+      
+      // Initialize token optimizer
+      await this.tokenOptimizer.initialize();
+      
+      // Initialize validation engine
+      await this.validationEngine.initialize();
+      
+    } catch (error) {
+      console.warn('Warning: Failed to initialize some systems:', error);
+    }
+  }
+
+  /**
+   * Validate any code generated in the response
+   */
+  private async validateGeneratedCode(response: string): Promise<void> {
+    try {
+      // Extract code blocks from response
+      const codeBlocks = this.extractCodeBlocks(response);
+      
+      for (const block of codeBlocks) {
+        const validation = await this.validationEngine.validateCode(
+          block.code,
+          block.language,
+          {
+            projectStructure: this.contextManager.getCurrentState()?.project.structure,
+            dependencies: Object.keys(this.contextManager.getCurrentState()?.project.dependencies || {})
+          }
+        );
+        
+        if (!validation.overall.passed) {
+          console.log(chalk.yellow(`⚠️  Code quality warning (${(validation.overall.score * 100).toFixed(0)}% quality score)`));
+          
+          // Show critical issues
+          const criticalIssues = validation.recommendations.filter(r => r.priority === 'critical');
+          if (criticalIssues.length > 0) {
+            console.log(chalk.red(`   Critical issues found: ${criticalIssues.length}`));
+            for (const issue of criticalIssues.slice(0, 3)) {
+              console.log(chalk.dim(`   • ${issue.title}`));
+            }
+          }
+        } else {
+          console.log(chalk.green(`✅ Code validation passed (${(validation.overall.score * 100).toFixed(0)}% quality score)`));
+        }
+      }
+    } catch (error) {
+      console.warn('Warning: Code validation failed:', error);
+    }
+  }
+
+  /**
+   * Extract code blocks from response text
+   */
+  private extractCodeBlocks(text: string): Array<{code: string; language: string}> {
+    const blocks: Array<{code: string; language: string}> = [];
+    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)\n```/g;
+    
+    let match;
+    while ((match = codeBlockRegex.exec(text)) !== null) {
+      const language = match[1] || 'text';
+      const code = match[2] || '';
+      
+      if (code.trim() && ['javascript', 'typescript', 'python', 'java', 'json'].includes(language.toLowerCase())) {
+        blocks.push({ code, language: language.toLowerCase() });
+      }
+    }
+    
+    return blocks;
   }
 
   /**

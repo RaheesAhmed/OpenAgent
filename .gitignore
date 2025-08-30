@@ -70,9 +70,9 @@ test-report.*
 *.cache
 
 /claude_docs/
-/.qoder/
 claudecode_weakness.md
 openclaude_dev_prompt.md
-claude.md
+claude-features.md
 whats_done.md
+features_to_implment.md
 /landingpage/
