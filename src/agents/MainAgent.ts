@@ -530,13 +530,38 @@ export class MainAgent {
             if (block && block.inputJson) {
               try {
                 const parsedInput = JSON.parse(block.inputJson);
+                
+                // Validate that required parameters are present and valid
+                if (block.name === 'create_file') {
+                  if (!parsedInput.path || typeof parsedInput.path !== 'string' || !parsedInput.path.trim()) {
+                    throw new Error('Required parameter "path" is missing or invalid');
+                  }
+                  if (!parsedInput.file_text || typeof parsedInput.file_text !== 'string') {
+                    throw new Error('Required parameter "file_text" is missing or invalid');
+                  }
+                } else if (block.name === 'search_replace') {
+                  if (!parsedInput.path || typeof parsedInput.path !== 'string' || !parsedInput.path.trim()) {
+                    throw new Error('Required parameter "path" is missing or invalid');
+                  }
+                  if (!parsedInput.old_str || typeof parsedInput.old_str !== 'string') {
+                    throw new Error('Required parameter "old_str" is missing or invalid');
+                  }
+                  if (parsedInput.new_str === undefined || typeof parsedInput.new_str !== 'string') {
+                    throw new Error('Required parameter "new_str" is missing or invalid');
+                  }
+                } else if (block.name === 'read_file') {
+                  if (!parsedInput.path || typeof parsedInput.path !== 'string' || !parsedInput.path.trim()) {
+                    throw new Error('Required parameter "path" is missing or invalid');
+                  }
+                }
+                
                 // Merge parsed JSON with existing input
                 block.input = { ...block.input, ...parsedInput };
                 // Clean up the temporary inputJson
                 delete block.inputJson;
               } catch (e) {
-                console.error(`[DEBUG] ❌ Failed to parse accumulated JSON for tool ${block.name}:`, e);
-                console.error(`[DEBUG] Accumulated JSON was: ${block.inputJson}`);
+                console.error(`\n❌ Tool parameter error for ${block.name}:`, e instanceof Error ? e.message : String(e));
+                console.error(`   Raw JSON: ${block.inputJson}`);
                 // Keep the inputJson for debugging but mark it as invalid
                 block.inputJsonError = e instanceof Error ? e.message : String(e);
               }
