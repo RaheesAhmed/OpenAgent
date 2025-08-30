@@ -25,7 +25,6 @@
 - **Terminal-Based Operation**: Command-line AI assistant that integrates with your existing development workflow
 - **Autonomous Code Generation**: AI agent that can understand requirements and implement solutions across multiple files
 - **Deep Codebase Awareness**: Comprehensive understanding of project structure, dependencies, and coding patterns
-- **File Attachment System**: Attach files and folders to chat messages using "@" for instant context sharing
 - **File System Operations**: Read, create, edit, and delete files with intelligent content handling
 - **Command Execution**: Run terminal commands, tests, and build scripts through natural language instructions
 - **Version Control Integration**: Git operations including commits, branches, and pull request management
