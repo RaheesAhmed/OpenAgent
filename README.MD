@@ -4,10 +4,10 @@
   <p><strong>Advanced open-source AI development assistant inspired by Claude Code</strong></p>
   
   <p>
-    <a href="https://github.com/RaheesAhmed/open-claude/stargazers"><img src="https://img.shields.io/github/stars/RaheesAhmed/open-claude?style=flat-square" alt="Stars"></a>
-    <a href="https://github.com/RaheesAhmed/open-claude/network/members"><img src="https://img.shields.io/github/forks/RaheesAhmed/open-claude?style=flat-square" alt="Forks"></a>
-    <a href="https://github.com/RaheesAhmed/open-claude/issues"><img src="https://img.shields.io/github/issues/RaheesAhmed/open-claude?style=flat-square" alt="Issues"></a>
-    <a href="https://github.com/RaheesAhmed/open-claude/blob/main/LICENSE"><img src="https://img.shields.io/github/license/RaheesAhmed/open-claude?style=flat-square" alt="MIT License"></a>
+    <a href="https://github.com/RaheesAhmed/OpenClaude/stargazers"><img src="https://img.shields.io/github/stars/RaheesAhmed/OpenClaude?style=flat-square" alt="Stars"></a>
+    <a href="https://github.com/RaheesAhmed/OpenClaude/network/members"><img src="https://img.shields.io/github/forks/RaheesAhmed/OpenClaude?style=flat-square" alt="Forks"></a>
+    <a href="https://github.com/RaheesAhmed/OpenClaude/issues"><img src="https://img.shields.io/github/issues/RaheesAhmed/OpenClaude?style=flat-square" alt="Issues"></a>
+    <a href="https://github.com/RaheesAhmed/OpenClaude/blob/main/LICENSE"><img src="https://img.shields.io/github/license/RaheesAhmed/OpenClaude?style=flat-square" alt="MIT License"></a>
   </p>
   
   <p>UNDER ACTIVE DEVELOPMENT</p>
@@ -47,8 +47,8 @@
 
 1. **Clone Repository**
 ```bash
-git clone https://github.com/RaheesAhmed/open-claude.git
-cd open-claude
+git clone https://github.com/RaheesAhmed/OpenClaude.git
+cd OpenClaude
 ```
 
 2. **Install Dependencies**
@@ -227,7 +227,7 @@ We welcome contributions! Here's how to get started:
 
 ### Development Setup
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/yourusername/open-claude.git`
+2. Clone your fork: `git clone https://github.com/yourusername/OpenClaude.git`
 3. Install dependencies: `npm install`
 4. Create a branch: `git checkout -b feature-name`
 5. Make your changes and test thoroughly
@@ -246,8 +246,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/RaheesAhmed/open-claude/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/RaheesAhmed/open-claude/discussions)
+- **Issues**: [GitHub Issues](https://github.com/RaheesAhmed/OpenClaude/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/RaheesAhmed/OpenClaude/discussions)
 
 ---
 
