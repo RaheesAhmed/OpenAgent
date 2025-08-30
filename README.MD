@@ -36,7 +36,7 @@ cd OpenClaude && npm install && npm run build
 export ANTHROPIC_API_KEY="your-key-here"
 
 # Start chatting
-openclaude
+node .\dist\index.js
 ```
 
 ---
