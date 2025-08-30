@@ -5,6 +5,7 @@ import { OPENCLAUDE_SYSTEM_PROMPT } from "../prompts/openclaude_prompt.js";
 import { TokenCounter } from '../core/tokens/TokenCounter.js';
 import { allToolDefinitions } from '../tools/index.js';
 import { executeCustomTool } from '../tools/executor.js';
+import { MemoryIntegration } from '../memory/index.js';
 
 
 /**
@@ -16,12 +17,18 @@ export class MainAgent {
   private tokenCounter: TokenCounter;
   private mcpServers: any[];
   private customRules: string;
+  private memory: MemoryIntegration;
+  private context: AgentContext;
 
-  constructor(apiKey: string, _context: AgentContext, mcpServers: any[] = [], customRules: string = '') {
+  constructor(apiKey: string, context: AgentContext, mcpServers: any[] = [], customRules: string = '') {
     this.anthropic = new Anthropic({ apiKey });
     this.tokenCounter = new TokenCounter(apiKey);
     this.mcpServers = mcpServers;
     this.customRules = customRules;
+    this.context = context;
+    
+    // Initialize memory system
+    this.memory = new MemoryIntegration(context.projectPath, context.session.id);
     
     this.config = {
       id: "openclaude-main",
@@ -73,8 +80,17 @@ export class MainAgent {
     const startTime = Date.now();
 
     try {
+      // Get contextual memories to enhance response
+      const memoryContext = await this.memory.getContextualMemories(message, this.context);
+      
+      // Build enhanced message with memory context
+      let userContent = message;
+      if (memoryContext.trim()) {
+        userContent += memoryContext;
+      }
+
       let messages: Array<any> = [
-        { role: 'user' as const, content: message }
+        { role: 'user' as const, content: userContent }
       ];
 
       // Keep processing until Claude stops using tools
@@ -175,7 +191,7 @@ export class MainAgent {
       // Display cost for the complete interaction
       this.displayCost(totalUsage, this.config.model);
       
-      return {
+      const response: AgentResponse = {
         success: true,
         content: finalResponse,
         toolUses: [],
@@ -190,6 +206,26 @@ export class MainAgent {
           confidence: 0.9
         }
       };
+
+      // Learn from this interaction
+      try {
+        await this.memory.learnFromInteraction({
+          userMessage: message,
+          response: finalResponse,
+          success: true,
+          toolsUsed: this.extractToolNamesFromMessages(messages),
+          duration: response.metadata.responseTime,
+          context: {
+            tokensUsed: response.metadata.tokensUsed,
+            model: response.metadata.modelUsed,
+            confidence: response.metadata.confidence
+          }
+        });
+      } catch (memoryError) {
+        console.warn('Warning: Failed to store interaction in memory:', memoryError);
+      }
+
+      return response;
     } catch (error) {
       return this.createErrorResponse(error as Error, startTime);
     }
@@ -579,6 +615,25 @@ export class MainAgent {
     this.config.metadata.usage.avgResponseTime = 
       (this.config.metadata.usage.avgResponseTime * (this.config.metadata.usage.totalCalls - 1) + responseTime) / 
       this.config.metadata.usage.totalCalls;
+  }
+
+  /**
+   * Extract tool names from message history for memory learning
+   */
+  private extractToolNamesFromMessages(messages: any[]): string[] {
+    const toolNames: string[] = [];
+    
+    for (const message of messages) {
+      if (message.role === 'assistant' && Array.isArray(message.content)) {
+        for (const content of message.content) {
+          if (content.type === 'tool_use' && content.name) {
+            toolNames.push(content.name);
+          }
+        }
+      }
+    }
+    
+    return toolNames;
   }
 
   /**

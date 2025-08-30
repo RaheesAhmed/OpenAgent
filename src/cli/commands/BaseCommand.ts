@@ -3,7 +3,7 @@ import { BRAND_COLORS, createErrorMessage, createSuccessMessage } from '../inter
 import { LoadingSpinner } from '../interface/components.js';
 
 /**
- * Base class for all OpenClaude CLI commands
+ * Base class for all OpenClaude  commands
  * Provides consistent structure and error handling
  */
 export abstract class BaseCommand {
