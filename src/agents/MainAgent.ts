@@ -25,6 +25,7 @@ export class MainAgent {
   private customRules: string;
   private memory: MemoryIntegration;
   private context: AgentContext;
+  private debugMode: boolean = false; // Add debug mode flag
 
   constructor(apiKey: string, context: AgentContext, mcpServers: any[] = [], customRules: string = '') {
     this.anthropic = new Anthropic({ apiKey });
@@ -32,6 +33,7 @@ export class MainAgent {
     this.mcpServers = mcpServers;
     this.customRules = customRules;
     this.context = context;
+    this.debugMode = process.env['DEBUG_OPENCLAUDE'] === 'true' || false; // Enable debug via env var
     
     // Initialize advanced systems
     this.contextManager = new ContextManager(context.projectPath, apiKey);
@@ -170,27 +172,33 @@ export class MainAgent {
       while (loopCount < maxLoops) {
         loopCount++;
         
-        // Prepare the request with MCP servers if available
-        const requestOptions: any = {
+        // Use streaming for real-time response
+        const streamOptions: any = {
           model: this.config.model,
           max_tokens: this.config.maxTokens,
           temperature: this.config.temperature,
           system: this.config.systemPrompt,
           messages: messages,
-          tools: this.config.tools
+          tools: this.config.tools,
+          stream: true
         };
-
+        
         // Add MCP servers if configured
         if (this.mcpServers && this.mcpServers.length > 0) {
-          requestOptions.mcp_servers = this.mcpServers;
+          streamOptions.mcp_servers = this.mcpServers;
         }
-
-        // Use streaming for real-time response
+        
+        // Add headers for MCP and fine-grained streaming
+        const headers: any = {};
+        if (this.mcpServers && this.mcpServers.length > 0) {
+          headers['anthropic-beta'] = 'mcp-client-2025-04-04,fine-grained-tool-streaming-2025-05-14';
+        } else {
+          headers['anthropic-beta'] = 'fine-grained-tool-streaming-2025-05-14';
+        }
+        
         const stream = await this.anthropic.messages.stream(
-          requestOptions,
-          this.mcpServers && this.mcpServers.length > 0 ? {
-            headers: { 'anthropic-beta': 'mcp-client-2025-04-04' }
-          } : {}
+          streamOptions,
+          { headers }
         );
 
         const response = await this.handleStreamResponse(stream, startTime);
@@ -436,12 +444,19 @@ export class MainAgent {
               }
               block.inputJson += event.delta.partial_json;
               
-              // Stream the tool parameters to the user in real-time
-              process.stdout.write(chalk.dim(event.delta.partial_json));
+              // Show real-time streaming of tool parameters
+              process.stdout.write(chalk.cyan(event.delta.partial_json));
             }
           }
         } else if (event.type === 'content_block_start') {
           const blockIndex = event.index;
+          
+          if (this.debugMode) {
+            console.log(`\n[DEBUG] Content block ${blockIndex} started:`, event.content_block.type, event.content_block.name);
+            if (event.content_block.input) {
+              console.log('[DEBUG] Initial input:', JSON.stringify(event.content_block.input, null, 2));
+            }
+          }
           
           if (event.content_block.type === 'tool_use') {
             // When a tool starts, if we were streaming text, add a line break
@@ -480,7 +495,7 @@ export class MainAgent {
             const toolUse = {
               id: event.content_block.id,
               name: event.content_block.name,
-              input: event.content_block.input || {},
+              input: event.content_block.input || {}, // Use initial input from content_block_start
               inputJson: '', // Will be populated by streaming deltas
               output: null,
               error: null,
@@ -524,35 +539,70 @@ export class MainAgent {
         } else if (event.type === 'content_block_stop') {
           const blockIndex = event.index;
           
+          if (this.debugMode) {
+            console.log(`\n[DEBUG] Content block ${blockIndex} stopped`);
+            if (contentBlocks.has(blockIndex)) {
+              const block = contentBlocks.get(blockIndex);
+              console.log('[DEBUG] Block data:', {
+                name: block.name,
+                hasInputJson: !!block.inputJson,
+                inputJsonLength: block.inputJson ? block.inputJson.length : 0,
+                initialInput: block.input
+              });
+            }
+          }
+          
           // Parse accumulated JSON for tool use blocks when they complete
           if (contentBlocks.has(blockIndex)) {
             const block = contentBlocks.get(blockIndex);
             if (block && block.inputJson) {
               try {
-                const parsedInput = JSON.parse(block.inputJson);
+                // Attempt to parse the accumulated JSON
+                let parsedInput;
+                try {
+                  parsedInput = JSON.parse(block.inputJson);
+                } catch (jsonError) {
+                  // Handle incomplete JSON due to fine-grained streaming or max_tokens limit
+                  console.warn(`\n⚠️  JSON parsing failed for ${block.name}, attempting to fix incomplete JSON...`);
+                  
+                  // Try to fix common incomplete JSON issues
+                  let fixedJson = block.inputJson.trim();
+                  
+                  // If it ends with a comma, remove it
+                  if (fixedJson.endsWith(',')) {
+                    fixedJson = fixedJson.slice(0, -1);
+                  }
+                  
+                  // Try to close any unclosed braces or brackets
+                  const openBraces = (fixedJson.match(/\{/g) || []).length;
+                  const closeBraces = (fixedJson.match(/\}/g) || []).length;
+                  const openBrackets = (fixedJson.match(/\[/g) || []).length;
+                  const closeBrackets = (fixedJson.match(/\]/g) || []).length;
+                  
+                  // Add missing closing brackets
+                  for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                    fixedJson += ']';
+                  }
+                  
+                  // Add missing closing braces
+                  for (let i = 0; i < openBraces - closeBraces; i++) {
+                    fixedJson += '}';
+                  }
+                  
+                  try {
+                    parsedInput = JSON.parse(fixedJson);
+                    console.log(`✅ Successfully fixed incomplete JSON for ${block.name}`);
+                  } catch (secondError) {
+                    // If we still can't parse it, wrap it as invalid JSON as per documentation
+                    console.error(`❌ Could not fix JSON for ${block.name}, wrapping as invalid`);
+                    throw new Error(`Invalid JSON received: ${block.inputJson}`);
+                  }
+                }
                 
                 // Validate that required parameters are present and valid
-                if (block.name === 'create_file') {
-                  if (!parsedInput.path || typeof parsedInput.path !== 'string' || !parsedInput.path.trim()) {
-                    throw new Error('Required parameter "path" is missing or invalid');
-                  }
-                  if (!parsedInput.file_text || typeof parsedInput.file_text !== 'string') {
-                    throw new Error('Required parameter "file_text" is missing or invalid');
-                  }
-                } else if (block.name === 'search_replace') {
-                  if (!parsedInput.path || typeof parsedInput.path !== 'string' || !parsedInput.path.trim()) {
-                    throw new Error('Required parameter "path" is missing or invalid');
-                  }
-                  if (!parsedInput.old_str || typeof parsedInput.old_str !== 'string') {
-                    throw new Error('Required parameter "old_str" is missing or invalid');
-                  }
-                  if (parsedInput.new_str === undefined || typeof parsedInput.new_str !== 'string') {
-                    throw new Error('Required parameter "new_str" is missing or invalid');
-                  }
-                } else if (block.name === 'read_file') {
-                  if (!parsedInput.path || typeof parsedInput.path !== 'string' || !parsedInput.path.trim()) {
-                    throw new Error('Required parameter "path" is missing or invalid');
-                  }
+                const validationError = this.validateToolParameters(block.name, parsedInput);
+                if (validationError) {
+                  throw new Error(validationError);
                 }
                 
                 // Merge parsed JSON with existing input
@@ -564,7 +614,21 @@ export class MainAgent {
                 console.error(`   Raw JSON: ${block.inputJson}`);
                 // Keep the inputJson for debugging but mark it as invalid
                 block.inputJsonError = e instanceof Error ? e.message : String(e);
+                
+                // For invalid JSON, wrap it as per documentation recommendation
+                if (block.inputJson && typeof block.inputJson === 'string') {
+                  block.input = {
+                    INVALID_JSON: block.inputJson.replace(/"/g, '\\"') // Escape quotes
+                  };
+                }
               }
+            } else if (block && (!block.input || Object.keys(block.input).length === 0)) {
+              // No streamed JSON parameters and no initial input, this is an error
+              console.error(`\n⚠️  No parameters received for ${block.name}`);
+              block.inputJsonError = 'No parameters received from streaming or initial input';
+            } else if (block && !block.inputJson) {
+              // No streamed JSON parameters, but we have initial input from content_block_start
+              console.log(`\n✅ Using initial parameters for ${block.name}`);
             }
           }
           
@@ -623,17 +687,25 @@ export class MainAgent {
         // Check for any JSON parsing errors from streaming
         if (toolUse.inputJsonError) {
           result = `Error: Failed to parse tool parameters - ${toolUse.inputJsonError}`;
+          console.log(chalk.red(`✗ ${toolUse.name} failed: Parameter parsing error`));
         } else {
-          // Execute custom tool
-          const toolResult = await executeCustomTool(toolUse.name, input);
-          
-          if (toolResult.success) {
-            result = toolResult.content;
-            // Show successful tool completion
-            this.displayToolResult(toolUse.name, result);
+          // Validate parameters before execution
+          const validationError = this.validateToolParameters(toolUse.name, input);
+          if (validationError) {
+            result = `Error: Parameter validation failed - ${validationError}`;
+            console.log(chalk.red(`✗ ${toolUse.name} failed: ${validationError}`));
           } else {
-            result = toolResult.error || 'Unknown tool error';
-            console.log(chalk.red(`✗ ${toolUse.name} failed: ${result}`));
+            // Execute custom tool
+            const toolResult = await executeCustomTool(toolUse.name, input);
+            
+            if (toolResult.success) {
+              result = toolResult.content;
+              // Show successful tool completion
+              this.displayToolResult(toolUse.name, result);
+            } else {
+              result = toolResult.error || 'Unknown tool error';
+              console.log(chalk.red(`✗ ${toolUse.name} failed: ${result}`));
+            }
           }
         }
         
@@ -808,6 +880,64 @@ export class MainAgent {
     this.config.metadata.usage.avgResponseTime = 
       (this.config.metadata.usage.avgResponseTime * (this.config.metadata.usage.totalCalls - 1) + responseTime) / 
       this.config.metadata.usage.totalCalls;
+  }
+
+  /**
+   * Validate tool parameters based on tool requirements
+   */
+  private validateToolParameters(toolName: string, params: any): string | null {
+    if (!params || typeof params !== 'object') {
+      return 'Invalid parameters object';
+    }
+
+    switch (toolName) {
+      case 'create_file':
+        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
+          return 'Required parameter "path" is missing or invalid';
+        }
+        if (params.file_text === undefined || typeof params.file_text !== 'string') {
+          return 'Required parameter "file_text" is missing or invalid';
+        }
+        break;
+        
+      case 'search_replace':
+        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
+          return 'Required parameter "path" is missing or invalid';
+        }
+        if (!params.old_str || typeof params.old_str !== 'string') {
+          return 'Required parameter "old_str" is missing or invalid';
+        }
+        if (params.new_str === undefined || typeof params.new_str !== 'string') {
+          return 'Required parameter "new_str" is missing or invalid';
+        }
+        break;
+        
+      case 'read_file':
+        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
+          return 'Required parameter "path" is missing or invalid';
+        }
+        break;
+        
+      case 'delete_file':
+        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
+          return 'Required parameter "path" is missing or invalid';
+        }
+        break;
+        
+      case 'list_directory':
+        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
+          return 'Required parameter "path" is missing or invalid';
+        }
+        break;
+        
+      case 'terminal':
+        if (!params.command || typeof params.command !== 'string' || !params.command.trim()) {
+          return 'Required parameter "command" is missing or invalid';
+        }
+        break;
+    }
+    
+    return null; // All validations passed
   }
 
   /**

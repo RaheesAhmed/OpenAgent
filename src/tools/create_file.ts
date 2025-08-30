@@ -20,25 +20,44 @@ export async function createFile(params: CreateFileParams): Promise<CreateFileRe
   try {
     const { path: filePath, file_text, overwrite = false } = params;
     
-    // Check if file already exists
-    if (await fs.pathExists(filePath) && !overwrite) {
+    // Validate parameters
+    if (!filePath || typeof filePath !== 'string' || !filePath.trim()) {
       return {
         success: false,
         message: '',
-        error: `File already exists: ${filePath}. Use overwrite: true to replace it.`
+        error: 'Parameter "path" is required and must be a non-empty string'
+      };
+    }
+    
+    if (file_text === undefined || typeof file_text !== 'string') {
+      return {
+        success: false,
+        message: '',
+        error: 'Parameter "file_text" is required and must be a string'
+      };
+    }
+    
+    const normalizedPath = path.resolve(filePath.trim());
+    
+    // Check if file already exists
+    if (await fs.pathExists(normalizedPath) && !overwrite) {
+      return {
+        success: false,
+        message: '',
+        error: `File already exists: ${normalizedPath}. Use overwrite: true to replace it.`
       };
     }
     
     // Ensure directory exists
-    const dirPath = path.dirname(filePath);
+    const dirPath = path.dirname(normalizedPath);
     await fs.ensureDir(dirPath);
     
     // Write file
-    await fs.writeFile(filePath, file_text, 'utf-8');
+    await fs.writeFile(normalizedPath, file_text, 'utf-8');
     
     return {
       success: true,
-      message: `File created successfully: ${filePath}`
+      message: `File created successfully: ${normalizedPath}`
     };
     
   } catch (error) {
@@ -52,7 +71,7 @@ export async function createFile(params: CreateFileParams): Promise<CreateFileRe
 
 export const createFileToolDefinition = {
   name: 'create_file',
-  description: 'Create a new file with specified content',
+  description: 'Create a new file with specified content provide the file path and text both are manadatory Example: { "path": "src/components/Button.tsx", "file_text": "import React from;...", "overwrite": false }',
   input_schema: {
     type: 'object',
     properties: {
