@@ -28,8 +28,8 @@
 
 ```bash
 # Clone and setup
-git clone https://github.com/RaheesAhmed/open-claude.git
-cd open-claude && npm install && npm run build
+git clone https://github.com/RaheesAhmed/OpenClaude.git
+cd OpenClaude && npm install && npm run build
 
 # Set API key
 export ANTHROPIC_API_KEY="your-key-here"
