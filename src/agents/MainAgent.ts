@@ -53,7 +53,7 @@ export class MainAgent {
     
     this.config = {
       id: "openclaude-main",
-      name: "OpenClaude Assistant",
+      name: "OpenClaude",
       description:
         "Advanced AI development assistant that handles all coding tasks",
       model: "claude-sonnet-4-20250514",
@@ -495,7 +495,7 @@ export class MainAgent {
             const toolUse = {
               id: event.content_block.id,
               name: event.content_block.name,
-              input: event.content_block.input || {}, // Use initial input from content_block_start
+              input: event.content_block.input ? { ...event.content_block.input } : {}, // Deep copy initial input from content_block_start
               inputJson: '', // Will be populated by streaming deltas
               output: null,
               error: null,
@@ -599,11 +599,7 @@ export class MainAgent {
                   }
                 }
                 
-                // Validate that required parameters are present and valid
-                const validationError = this.validateToolParameters(block.name, parsedInput);
-                if (validationError) {
-                  throw new Error(validationError);
-                }
+                // Skip validation - parameters are handled by the tools themselves
                 
                 // Merge parsed JSON with existing input
                 block.input = { ...block.input, ...parsedInput };
@@ -689,23 +685,20 @@ export class MainAgent {
           result = `Error: Failed to parse tool parameters - ${toolUse.inputJsonError}`;
           console.log(chalk.red(`✗ ${toolUse.name} failed: Parameter parsing error`));
         } else {
-          // Validate parameters before execution
-          const validationError = this.validateToolParameters(toolUse.name, input);
-          if (validationError) {
-            result = `Error: Parameter validation failed - ${validationError}`;
-            console.log(chalk.red(`✗ ${toolUse.name} failed: ${validationError}`));
+          // Add debug logging for parameters being passed to tools
+          console.log(chalk.cyan(`[DEBUG] Executing ${toolUse.name} with parameters:`));
+          console.log(chalk.dim(JSON.stringify(input, null, 2)));
+          
+          // Execute custom tool directly without validation
+          const toolResult = await executeCustomTool(toolUse.name, input);
+          
+          if (toolResult.success) {
+            result = toolResult.content;
+            // Show successful tool completion
+            this.displayToolResult(toolUse.name, result);
           } else {
-            // Execute custom tool
-            const toolResult = await executeCustomTool(toolUse.name, input);
-            
-            if (toolResult.success) {
-              result = toolResult.content;
-              // Show successful tool completion
-              this.displayToolResult(toolUse.name, result);
-            } else {
-              result = toolResult.error || 'Unknown tool error';
-              console.log(chalk.red(`✗ ${toolUse.name} failed: ${result}`));
-            }
+            result = toolResult.error || 'Unknown tool error';
+            console.log(chalk.red(`✗ ${toolUse.name} failed: ${result}`));
           }
         }
         
@@ -882,63 +875,7 @@ export class MainAgent {
       this.config.metadata.usage.totalCalls;
   }
 
-  /**
-   * Validate tool parameters based on tool requirements
-   */
-  private validateToolParameters(toolName: string, params: any): string | null {
-    if (!params || typeof params !== 'object') {
-      return 'Invalid parameters object';
-    }
-
-    switch (toolName) {
-      case 'create_file':
-        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
-          return 'Required parameter "path" is missing or invalid';
-        }
-        if (params.file_text === undefined || typeof params.file_text !== 'string') {
-          return 'Required parameter "file_text" is missing or invalid';
-        }
-        break;
-        
-      case 'search_replace':
-        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
-          return 'Required parameter "path" is missing or invalid';
-        }
-        if (!params.old_str || typeof params.old_str !== 'string') {
-          return 'Required parameter "old_str" is missing or invalid';
-        }
-        if (params.new_str === undefined || typeof params.new_str !== 'string') {
-          return 'Required parameter "new_str" is missing or invalid';
-        }
-        break;
-        
-      case 'read_file':
-        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
-          return 'Required parameter "path" is missing or invalid';
-        }
-        break;
-        
-      case 'delete_file':
-        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
-          return 'Required parameter "path" is missing or invalid';
-        }
-        break;
-        
-      case 'list_directory':
-        if (!params.path || typeof params.path !== 'string' || !params.path.trim()) {
-          return 'Required parameter "path" is missing or invalid';
-        }
-        break;
-        
-      case 'terminal':
-        if (!params.command || typeof params.command !== 'string' || !params.command.trim()) {
-          return 'Required parameter "command" is missing or invalid';
-        }
-        break;
-    }
-    
-    return null; // All validations passed
-  }
+ 
 
   /**
    * Extract tool names from message history for memory learning

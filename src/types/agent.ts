@@ -30,7 +30,7 @@ export interface AgentConfig {
   id: string;
   name: string;
   description: string;
-  model: 'claude-sonnet-4-20250514';
+  model: string;
   systemPrompt: string;
   tools: Tool[];
   capabilities: AgentCapability[];
