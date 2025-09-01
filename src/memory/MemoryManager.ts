@@ -1,5 +1,8 @@
 /**
- * Core Memory Manager for OpenClaude
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * Core Memory Manager for OpenAgent
  * Implements persistent, never-forget memory with intelligent retrievalls
  */
 

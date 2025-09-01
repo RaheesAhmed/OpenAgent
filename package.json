@@ -1,11 +1,11 @@
 {
-  "name": "openclaude",
+  "name": "openagent",
   "version": "1.0.0",
   "description": "open-source AI development assistant",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "openclaude": "dist/index.js"
+    "openagent": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -22,13 +22,13 @@
     "ai",
     "coding",
     "assistant",
-    "claude",
+    "agent",
     "typescript",
     "cli",
     "development",
     "mcp"
   ],
-  "author": "OpenClaude Team",
+  "author": "OpenAgent Team",
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
@@ -77,10 +77,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openclaude/openclaude.git"
+    "url": "https://github.com/openagent/openagent.git"
   },
   "bugs": {
-    "url": "https://github.com/openclaude/openclaude/issues"
+    "url": "https://github.com/openagent/openagent/issues"
   },
-  "homepage": "https://github.com/openclaude/openclaude#readme"
+  "homepage": "https://github.com/openagent/openagent#readme"
 }

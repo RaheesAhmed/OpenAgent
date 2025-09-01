@@ -1,5 +1,8 @@
 /**
- * Memory system types and interfaces for OpenClaude
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * Memory system types and interfaces for OpenAgent
  * Implementing persistent, never-forget memory with vector search
  */
 

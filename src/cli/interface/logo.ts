@@ -1,53 +1,59 @@
-import chalk from 'chalk';
+
 
 /**
- * OpenClaude ASCII Logo - Modern and Clean Design
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * OpenAgent ASCII Logo - Modern and Clean Design
  */
-export const OPENCLAUDE_LOGO = `
-██████╗ ██████╗ ███████╗███╗   ██╗     ██████╗██╗      █████╗ ██╗   ██╗██████╗ ███████╗
-██╔══██╗██╔══██╗██╔════╝████╗  ██║    ██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗██╔════╝
-██║  ██║██████╔╝█████╗  ██╔██╗ ██║    ██║     ██║     ███████║██║   ██║██║  ██║█████╗  
-██║  ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██║     ██║     ██╔══██║██║   ██║██║  ██║██╔══╝  
-██████╔╝██║     ███████╗██║ ╚████║    ╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝███████╗
-╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝     ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝
+import chalk from "chalk";
+export const OPENAGENT_LOGO = `
+ ██████╗ ██████╗ ███████╗███╗   ██╗     █████╗  ██████╗ ███████╗███╗   ██╗████████╗
+██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝
+██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║
+██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║    ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║
+╚██████╔╝██║     ███████╗██║ ╚████║    ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║
+ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝    ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝
 `;
 
 /**
  * Compact logo for smaller displays
  */
 export const COMPACT_LOGO = `
- ██████╗  ██████╗
-██╔═══██╗██╔════╝
-██║   ██║██║     
-██║   ██║██║     
-╚██████╔╝╚██████╗
- ╚═════╝  ╚═════╝
+ ██████╗  █████╗
+██╔═══██╗██╔══██╗
+██║   ██║███████║
+██║   ██║██╔══██║
+╚██████╔╝██║  ██║
+ ╚═════╝ ╚═╝  ╚═╝
 `;
 
 /**
- * Brand colors and styling - Alibaba-inspired Professional Palette
+ * Brand colors and styling - Premium Gold & Fire Palette
  */
 export const BRAND_COLORS = {
-  primary: '#FF6A00',     // Alibaba orange
-  secondary: '#1890FF',   // Alibaba blue
-  accent: '#52C41A',      // Success green
-  success: '#52C41A',     // Green
-  warning: '#FA8C16',     // Orange warning
-  error: '#F5222D',       // Red
-  muted: '#8C8C8C',       // Gray
-  text: '#FFFFFF',        // White
-  background: '#000000'   // Pure black
+  primary: '#FF6B35',     // Vibrant orange-red - main brand color
+  secondary: '#F7931E',   // Golden orange - secondary accent
+  accent: '#FFD700',      // Pure gold - highlights and success
+  success: '#32CD32',     // Lime green - success states
+  warning: '#FFA500',     // Orange - warnings
+  error: '#FF4757',       // Coral red - errors
+  muted: '#95A5A6',       // Light gray - muted text
+  text: '#FFFFFF',        // Pure white - text
+  background: '#1A1A1A',  // Rich dark background
+  gradient: ['#FF6B35', '#F7931E', '#FFD700'], // Fire gradient
+  glow: '#FFD700'         // Gold glow effect
 } as const;
 
 /**
- * Display the main OpenClaude logo with gradient effect
+ * Display the main OpenAgent logo with gradient effect
  */
 export function displayLogo(): void {
   const gradient = chalk.hex(BRAND_COLORS.primary).bold;
   const secondary = chalk.hex(BRAND_COLORS.secondary);
   
-  console.log(gradient(OPENCLAUDE_LOGO));
-  console.log(secondary('Your Coding Campanion'));
+  console.log(gradient(OPENAGENT_LOGO));
+  console.log(secondary('Your Coding Companion'));
 }
 
 /**
@@ -109,7 +115,7 @@ export function createWelcomeMessage(): string {
   return `
 ${primary('Ready to code.')}
 
-${muted('Just run "openclaude" to start.')}
+${muted('Just run "openagent" to start.')}
 `;
 }
 

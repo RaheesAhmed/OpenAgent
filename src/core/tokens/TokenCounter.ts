@@ -1,5 +1,8 @@
 /**
- * Token counting and pricing utility for OpenClaude
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * Token counting and pricing utility for OpenAgent
  */
 export class TokenCounter {
   // Pricing per million tokens (input/output)

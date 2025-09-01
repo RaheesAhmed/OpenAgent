@@ -1,11 +1,19 @@
-import chalk from 'chalk';
-import { BRAND_COLORS, createErrorMessage, createSuccessMessage } from '../interface/logo.js';
-import { LoadingSpinner } from '../interface/components.js';
-
 /**
- * Base class for all OpenClaude  commands
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * Base class for all OpenAgent commands
  * Provides consistent structure and error handling
  */
+
+import chalk from "chalk";
+import {
+  BRAND_COLORS,
+  createErrorMessage,
+  createSuccessMessage,
+} from "../interface/logo.js";
+import { LoadingSpinner } from "../interface/components.js";
+
 export abstract class BaseCommand {
   protected spinner: LoadingSpinner | null = null;
 
@@ -89,18 +97,18 @@ export abstract class BaseCommand {
    */
   private handleError(error: unknown): void {
     this.stopSpinner();
-    
+
     if (error instanceof Error) {
       this.logError(error.message);
-      
+
       // In development, show stack trace
-      if (process.env['NODE_ENV'] === 'development') {
-        console.error(chalk.hex(BRAND_COLORS.muted)(error.stack || ''));
+      if (process.env["NODE_ENV"] === "development") {
+        console.error(chalk.hex(BRAND_COLORS.muted)(error.stack || ""));
       }
     } else {
-      this.logError('An unknown error occurred');
+      this.logError("An unknown error occurred");
     }
-    
+
     process.exit(1);
   }
 
@@ -117,11 +125,14 @@ export abstract class BaseCommand {
   /**
    * Validate required parameters
    */
-  protected validateRequired(params: Record<string, any>, required: string[]): void {
-    const missing = required.filter(key => !params[key]);
-    
+  protected validateRequired(
+    params: Record<string, any>,
+    required: string[]
+  ): void {
+    const missing = required.filter((key) => !params[key]);
+
     if (missing.length > 0) {
-      throw new Error(`Missing required parameters: ${missing.join(', ')}`);
+      throw new Error(`Missing required parameters: ${missing.join(", ")}`);
     }
   }
 
@@ -131,15 +142,15 @@ export abstract class BaseCommand {
   protected displayHeader(title: string, subtitle?: string): void {
     const primary = chalk.hex(BRAND_COLORS.primary).bold;
     const secondary = chalk.hex(BRAND_COLORS.secondary);
-    const divider = chalk.hex(BRAND_COLORS.muted)('═'.repeat(60));
-    
+    const divider = chalk.hex(BRAND_COLORS.muted)("═".repeat(60));
+
     console.log(`\n${divider}`);
     console.log(primary(`🚀 ${title}`));
-    
+
     if (subtitle) {
       console.log(secondary(subtitle));
     }
-    
+
     console.log(`${divider}\n`);
   }
 }

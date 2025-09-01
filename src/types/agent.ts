@@ -1,5 +1,8 @@
 /**
- * Core agent interfaces and types for OpenClaude
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * Core agent interfaces and types for OpenAgent
  * Based on Anthropic's agent architecture patterns
  */
 

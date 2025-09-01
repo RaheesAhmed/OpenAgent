@@ -1,11 +1,15 @@
 <div align="center">
-  <img src="assets/openclaude.svg" alt="OpenClaude" width="200"/>
+  <img src="assets/openagent.svg" alt="OpenAgent" width="200"/>
   
-  **OpenClaude - Open-source AI development assistant**
+  **OpenAgent - Open-source AI development assistant**
   
-  [![GitHub Stars](https://img.shields.io/github/stars/RaheesAhmed/OpenClaude?style=for-the-badge)](https://github.com/RaheesAhmed/OpenClaude/stargazers)
-  [![GitHub Forks](https://img.shields.io/github/forks/RaheesAhmed/OpenClaude?style=for-the-badge)](https://github.com/RaheesAhmed/OpenClaude/network)
+  [![GitHub Stars](https://img.shields.io/github/stars/RaheesAhmed/OpenAgent?style=for-the-badge)](https://github.com/RaheesAhmed/OpenAgent/stargazers)
+  [![GitHub Forks](https://img.shields.io/github/forks/RaheesAhmed/OpenAgent?style=for-the-badge)](https://github.com/RaheesAhmed/OpenAgent/network)
   [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+  
+  ## ℹ️ **IMPORTANT: Name Change Notice**
+  
+  **This project was previously named "OpenClaude" but has been rebranded to "OpenAgent" to avoid trademark conflicts with Anthropic's Claude brand. All functionality remains the same - we simply changed the name to ensure complete legal compliance and professional distribution.**
   
   ## ⚠️ **UNDER ACTIVE DEVELOPMENT - IN BETA**
   ## **SOME FEATURES MAY NOT WORK AS EXPECTED**
@@ -29,26 +33,82 @@
 
 ```bash
 # Clone and setup
-git clone https://github.com/RaheesAhmed/OpenClaude.git
-cd OpenClaude
+git clone https://github.com/RaheesAhmed/OpenAgent.git
+cd OpenAgent
 npm install
 npm run build
 
 # Set your API key
 export ANTHROPIC_API_KEY="your-key-here"
 
-# Start using OpenClaude
+# Start using OpenAgent
 node ./dist/index.js
 ```
 
 ---
 
+## 🎮 Slash Commands
+
+OpenAgent includes a powerful set of **slash commands** for controlling your development session:
+
+### 📋 **Core Commands**
+- `/help` or `/h` or `/?` - Show all available commands
+- `/status` or `/st` - Display agent status, metrics, and performance data
+- `/version` or `/v` - Show OpenAgent version and model information
+- `/exit` or `/quit` or `/q` - Clean shutdown and exit
+
+### 🔄 **Session Management**
+- `/reset` or `/clear` or `/restart` - Reset agent and clear conversation history
+- `/new` or `/thread` - Create a new conversation thread
+- `/history [threadId]` or `/hist` - Show conversation history for current or specified thread
+- `/metrics` or `/stats` - Display detailed performance metrics
+
+### 🛠️ **Development Tools**
+- `/revert [steps]` or `/rv` - **Actually revert file changes** (deletes created files, undoes edits)
+- `/undo` or `/u` - Undo the last agent action (same as `/revert 1`)
+- `/diff [file]` or `/d` - Show all changes made by the agent with file previews
+- `/config` or `/cfg` - View/update agent configuration
+
+### 💾 **State Management**
+- `/checkpoint create <name>` or `/cp create` - Create a restore point
+- `/checkpoint list` or `/cp list` - List all available checkpoints
+- `/checkpoint restore <name>` or `/cp restore` - Restore from saved checkpoint
+- `/rollback [checkpoint]` or `/rb` - Rollback to previous stable state
+
+### 💡 **Usage Examples**
+```bash
+# Check what the agent has been doing
+/status
+
+# See all file changes made
+/diff
+
+# Undo the last change (actually deletes/reverts files)
+/undo
+
+# Revert last 3 operations
+/revert 3
+
+# Create a checkpoint before major changes
+/checkpoint create before-refactor
+
+# View conversation history
+/history
+
+# Start fresh
+/reset
+```
+
+**🔥 Real File Operations**: Unlike other AI assistants, OpenAgent's `/revert` and `/undo` commands **actually modify your filesystem** - deleting created files and reversing edits by analyzing the conversation history.
+
+---
+
 ## ⚙️ Configuration
 
-OpenClaude creates `.openclaude/` folder with configuration files:
+OpenAgent creates `.openagent/` folder with configuration files:
 
 ### Model Configuration
-Edit `.openclaude/config.json` to use any supported model:
+Edit `.openagent/config.json` to use any supported model:
 
 ```json
 {
@@ -70,8 +130,8 @@ Edit `.openclaude/config.json` to use any supported model:
 - `openai:gpt-3.5-turbo`
 - Any other LangChain universal model
 
-### MCP Server Configuration  
-Add MCP servers in `.openclaude/mcp-servers.json`:
+### MCP Server Configuration
+Add MCP servers in `.openagent/mcp-servers.json`:
 
 ```json
 {

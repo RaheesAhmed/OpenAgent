@@ -1,5 +1,8 @@
 /**
- * Memory Integration Layer for OpenClaude
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * Memory Integration Layer for OpenAgent
  * Integrates memory system with agents and provides high-level interface
  */
 
@@ -14,7 +17,7 @@ export class MemoryIntegration {
 
   constructor(projectPath: string, sessionId: string) {
     const config: MemoryConfig = {
-      databasePath: path.join(projectPath, '.openclaude', 'memory', 'database.sqlite'),
+      databasePath: path.join(projectPath, '.openagent', 'memory', 'database.sqlite'),
       vectorDimensions: 384, // Standard embedding size
       maxMemorySize: 1024, // 1GB limit
       compressionEnabled: true,

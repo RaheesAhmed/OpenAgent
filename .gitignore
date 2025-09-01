@@ -49,8 +49,8 @@ logs
 ehthumbs.db
 Thumbs.db
 
-# OpenClaude specific
-.openclaude/
+# OpenAgent specific
+.openagent/
 
 # Temporary files
 *.tmp
@@ -68,7 +68,7 @@ test-report.*
 # Cache
 .cache/
 *.cache
-
+/.openagent/
 /claude_docs/
 claudecode_weakness.md
 openclaude_dev_prompt.md

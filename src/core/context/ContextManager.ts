@@ -168,7 +168,7 @@ export class ContextManager extends EventEmitter {
   constructor(projectPath: string, _apiKey: string) {
     super();
     this.projectPath = projectPath;
-    this.contextPath = path.join(projectPath, '.openclaude', 'context');
+    this.contextPath = path.join(projectPath, '.openagent', 'context');
     
     // Start background processes
     this.startAutosave();

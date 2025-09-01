@@ -1,5 +1,5 @@
 /**
- * Code Quality Assurance Pipeline for OpenClaude
+ * Code Quality Assurance Pipeline for OpenAgent
  * Addresses Claude Code weakness: Bug generation, hallucinations, security vulnerabilities
  * Implements multi-layer validation, hallucination detection, and security scanning
  */
@@ -1541,7 +1541,7 @@ export class ValidationEngine extends EventEmitter {
 
   private async loadValidationHistory(): Promise<void> {
     try {
-      const historyPath = path.join(this.projectPath, '.openclaude', 'validation-history.json');
+      const historyPath = path.join(this.projectPath, '.openagent', 'validation-history.json');
       if (await fs.pathExists(historyPath)) {
         this.validationHistory = await fs.readJSON(historyPath);
       }
@@ -1621,7 +1621,7 @@ export class ValidationEngine extends EventEmitter {
   async cleanup(): Promise<void> {
     // Save validation history
     try {
-      const historyPath = path.join(this.projectPath, '.openclaude', 'validation-history.json');
+      const historyPath = path.join(this.projectPath, '.openagent', 'validation-history.json');
       await fs.ensureDir(path.dirname(historyPath));
       await fs.writeJSON(historyPath, this.validationHistory.slice(-100), { spaces: 2 });
     } catch (error) {

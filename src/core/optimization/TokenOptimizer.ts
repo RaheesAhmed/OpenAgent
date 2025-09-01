@@ -109,7 +109,7 @@ export class TokenOptimizer extends EventEmitter {
 
   constructor(projectPath: string) {
     super();
-    this.cachePath = path.join(projectPath, '.openclaude', 'optimization');
+    this.cachePath = path.join(projectPath, '.openagent', 'optimization');
     
     // Initialize optimization patterns
     this.initializeCompressionPatterns();

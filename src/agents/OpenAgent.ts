@@ -1,5 +1,8 @@
 /**
- * LangGraph-based OpenClaude Agent
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * LangGraph-based OpenAgent 
  * Provides vendor-independent AI agent with advanced memory, validation, and optimization
  */
 
@@ -17,7 +20,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { AgentConfig, AgentResponse, AgentContext } from '../types/agent.js';
-import { OPENCLAUDE_SYSTEM_PROMPT } from '../prompts/openclaude_prompt.js';
+import { OPENAGENT_SYSTEM_PROMPT } from '../prompts/openagent_prompt.js';
 import { TokenCounter } from '../core/tokens/TokenCounter.js';
 import { ContextManager } from '../core/context/ContextManager.js';
 import { TokenOptimizer } from '../core/optimization/TokenOptimizer.js';
@@ -26,8 +29,8 @@ import { MemoryIntegration } from '../memory/index.js';
 import { MCPClientManager } from '../mcp/client/MCPClient.js';
 
 
-// Configuration interface for OpenClaude
-export interface OpenClaudeConfig {
+// Configuration interface for OpenAgent
+export interface OpenAgentConfig {
   model: string;
   temperature: number;
   maxTokens: number;
@@ -39,7 +42,7 @@ export interface OpenClaudeConfig {
 }
 
 // Default configuration
-const DEFAULT_CONFIG: OpenClaudeConfig = {
+const DEFAULT_CONFIG: OpenAgentConfig = {
   model: "anthropic:claude-sonnet-4-20250514",
   temperature: 0.1,
   maxTokens: 4000,
@@ -49,10 +52,10 @@ const DEFAULT_CONFIG: OpenClaudeConfig = {
   checkpointsEnabled: true,
 };
 
-export class OpenClaude {
+export class OpenAgent {
   private agent: any;
   private config: AgentConfig;
-  private openClaudeConfig: OpenClaudeConfig;
+  private openAgentConfig: OpenAgentConfig;
   private tokenCounter: TokenCounter;
   private contextManager: ContextManager;
   private tokenOptimizer: TokenOptimizer;
@@ -70,7 +73,7 @@ export class OpenClaude {
     this.customRules = customRules;
     
     // Initialize configuration (will be loaded from file later)
-    this.openClaudeConfig = DEFAULT_CONFIG;
+    this.openAgentConfig = DEFAULT_CONFIG;
     
     // Initialize core systems
     this.tokenCounter = new TokenCounter(apiKey);
@@ -97,8 +100,8 @@ export class OpenClaude {
     this.checkpointer = new MemorySaver();
 
     this.config = {
-      id: "openclaude-langgraph",
-      name: "OpenClaude LangGraph",
+      id: "openagent-langgraph",
+      name: "OpenAgent LangGraph",
       description: "Advanced AI development assistant powered by LangGraph",
       model: "claude-3-5-sonnet-20241022",
       systemPrompt: this.buildSystemPrompt(),
@@ -135,7 +138,7 @@ export class OpenClaude {
       metadata: {
         category: "development",
         tags: ["langgraph", "claude", "development", "memory", "streaming"],
-        author: "OpenClaude",
+        author: "OpenAgent",
         version: "2.0.0",
         created: new Date(),
         updated: new Date(),
@@ -153,14 +156,14 @@ export class OpenClaude {
    */
   public async initialize(): Promise<void> {
     try {
-      // Load configuration from .openclaude/config.json
+      // Load configuration from .openagent/config.json
       await this.loadConfiguration();
       
       // Initialize universal chat model
-      this.chatModel = await initChatModel(this.openClaudeConfig.model, {
-        temperature: this.openClaudeConfig.temperature,
-        maxTokens: this.openClaudeConfig.maxTokens,
-        streaming: this.openClaudeConfig.streamingEnabled
+      this.chatModel = await initChatModel(this.openAgentConfig.model, {
+        temperature: this.openAgentConfig.temperature,
+        maxTokens: this.openAgentConfig.maxTokens,
+        streaming: this.openAgentConfig.streamingEnabled
       });
 
       // Chat model initialized successfully - silent for clean UX
@@ -186,18 +189,18 @@ export class OpenClaude {
         interruptBefore: [], // Disable interrupts for now to fix basic functionality
       });
 
-      //console.log(chalk.green('🚀 OpenClaude LangGraph agent initialized successfully!'));
+      //console.log(chalk.green('🚀 OpenAgent LangGraph agent initialized successfully!'));
     } catch (error) {
-      console.error(chalk.red('❌ Failed to initialize OpenClaude agent:'), error);
+      console.error(chalk.red('❌ Failed to initialize OpenAgent agent:'), error);
       throw error;
     }
   }
 
   /**
-   * Load configuration from .openclaude/config.json with automatic generation
+   * Load configuration from .openagent/config.json with automatic generation
    */
   private async loadConfiguration(): Promise<void> {
-    const configPath = path.join(this.context.projectPath, '.openclaude', 'config.json');
+    const configPath = path.join(this.context.projectPath, '.openagent', 'config.json');
     
     try {
       // Check if config file exists
@@ -205,7 +208,7 @@ export class OpenClaude {
       const loadedConfig = JSON.parse(configContent);
       
       // Merge with defaults
-      this.openClaudeConfig = { ...DEFAULT_CONFIG, ...loadedConfig };
+      this.openAgentConfig = { ...DEFAULT_CONFIG, ...loadedConfig };
       
       // Configuration loaded successfully - silent for clean UX
     } catch (error) {
@@ -213,17 +216,17 @@ export class OpenClaude {
       console.log(chalk.yellow('📋 Creating default config.json...'));
       
       await this.createDefaultConfig(configPath);
-      this.openClaudeConfig = { ...DEFAULT_CONFIG };
+      this.openAgentConfig = { ...DEFAULT_CONFIG };
     }
   }
 
   /**
-   * Create default configuration file in .openclaude folder
+   * Create default configuration file in .openagent folder
    */
   private async createDefaultConfig(configPath: string): Promise<void> {
     const configDir = path.dirname(configPath);
     
-    // Ensure .openclaude directory exists
+    // Ensure .openagent directory exists
     await fs.mkdir(configDir, { recursive: true });
     
     // Create clean JSON config
@@ -787,7 +790,7 @@ export class OpenClaude {
   }
 
   /**
-   * Update agent metrics (required by OpenClaudeManager)
+   * Update agent metrics (required by OpenAgentManager)
    */
   public updateMetrics(success: boolean, responseTime: number): void {
     this.config.metadata.usage.totalCalls += 1;
@@ -810,14 +813,14 @@ export class OpenClaude {
   }
 
   /**
-   * Get agent configuration (required by OpenClaudeManager)
+   * Get agent configuration (required by OpenAgentManager)
    */
   public getConfig(): AgentConfig {
     return this.config;
   }
 
   /**
-   * Check if agent is initialized (required by OpenClaudeManager)
+   * Check if agent is initialized (required by OpenAgentManager)
    */
   public isInitialized(): boolean {
     return this.agent !== null && this.memoryIntegration !== null && this.mcpClient.isInitialized();
@@ -866,7 +869,7 @@ export class OpenClaude {
    * Build system prompt with custom rules
    */
   private buildSystemPrompt(): string {
-    let prompt = OPENCLAUDE_SYSTEM_PROMPT;
+    let prompt = OPENAGENT_SYSTEM_PROMPT;
     
     if (this.customRules && this.customRules.trim()) {
       prompt += `\n\n## Custom Project Rules:\n${this.customRules}`;

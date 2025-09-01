@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+
+/**
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ */
 import chalk from 'chalk';
 import { 
   displayLogo, 
@@ -7,17 +12,23 @@ import {
   BRAND_COLORS
 } from './interface/logo.js';
 import { clearScreen } from './interface/components.js';
+
+
 import { StreamingHandler } from './interface/StreamingHandler.js';
-import { OpenClaudeManager } from "../agents/OpenClaudeManager.js";
+import { OpenAgentManager } from "../agents/OpenAgentManager.js";
+import { SlashCommandHandler } from './commands/SlashCommandHandler.js';
 
 /**
- * OpenClaude CLI Application - Direct Chat Interface
+ * OpenAgent CLI Application - Direct Chat Interface
  */
 
-const agentManager = OpenClaudeManager.getInstance();
+const agentManager = OpenAgentManager.getInstance();
 
 // Global streaming handler for agent feedback
 export let globalStreamingHandler: StreamingHandler | null = null;
+
+// Slash command handler
+let slashCommandHandler: SlashCommandHandler | null = null;
 
 /**
  * Get API key from environment
@@ -38,7 +49,8 @@ async function startInteractiveChat(): Promise<void> {
     prompt: chalk.hex(BRAND_COLORS.primary)('You: ')
   });
 
-  console.log(chalk.hex(BRAND_COLORS.text)('Type your message and press Enter. Type "exit" to quit.\n'));
+  console.log(chalk.hex(BRAND_COLORS.text)('Type your message and press Enter. Type "exit" or "/exit" to quit.'));
+  console.log(chalk.hex(BRAND_COLORS.muted)('💡 Use slash commands like /help, /status, /reset for quick actions.\n'));
   
   rl.prompt();
 
@@ -52,32 +64,42 @@ async function startInteractiveChat(): Promise<void> {
     }
     
     if (message) {
-      const streamingHandler = new StreamingHandler();
-      globalStreamingHandler = streamingHandler;
-      
-      try {
-        // Start with professional spinner
-        streamingHandler.start('OpenClaude is thinking');
-        
-        const response = await agentManager.processMessage(message);
-        
-        // Only show completion if the handler is still running
-        // (if it was stopped by streaming, don't show completion message)
-        if (streamingHandler.isRunning()) {
-          streamingHandler.complete('Response complete');
+      // Check if it's a slash command first
+      if (slashCommandHandler && slashCommandHandler.isSlashCommand(message)) {
+        try {
+          await slashCommandHandler.executeCommand(message);
+        } catch (error) {
+          console.error(chalk.hex(BRAND_COLORS.error)(`❌ Command error: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
-       
-        // The response content was already streamed by the agent
-        console.log();
+      } else {
+        // Process as normal chat message
+        const streamingHandler = new StreamingHandler();
+        globalStreamingHandler = streamingHandler;
         
-        if (response.toolUses && response.toolUses.length > 0) {
-          console.log(chalk.hex(BRAND_COLORS.muted)(`(Used ${response.toolUses.length} tools)`));
+        try {
+          // Start with professional spinner
+          streamingHandler.start('OpenAgent is thinking');
+          
+          const response = await agentManager.processMessage(message);
+          
+          // Only show completion if the handler is still running
+          // (if it was stopped by streaming, don't show completion message)
+          if (streamingHandler.isRunning()) {
+            streamingHandler.complete('Response complete');
+          }
+         
+          // The response content was already streamed by the agent
+          console.log();
+          
+          if (response.toolUses && response.toolUses.length > 0) {
+            console.log(chalk.hex(BRAND_COLORS.muted)(`(Used ${response.toolUses.length} tools)`));
+          }
+          
+        } catch (error) {
+          streamingHandler.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } finally {
+          globalStreamingHandler = null;
         }
-        
-      } catch (error) {
-        streamingHandler.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      } finally {
-        globalStreamingHandler = null;
       }
     }
     
@@ -123,11 +145,14 @@ async function main(): Promise<void> {
     // Initialize agent silently
     await agentManager.initialize(apiKey, process.cwd());
     
+    // Initialize slash command handler
+    slashCommandHandler = new SlashCommandHandler(agentManager);
+    
     // Start chat immediately without any headers
     await startInteractiveChat();
     
   } catch (error) {
-    console.error(createErrorMessage(`Failed to start OpenClaude: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    console.error(createErrorMessage(`Failed to start OpenAgent: ${error instanceof Error ? error.message : 'Unknown error'}`));
     process.exit(1);
   }
 }

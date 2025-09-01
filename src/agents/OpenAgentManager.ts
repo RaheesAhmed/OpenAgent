@@ -1,36 +1,39 @@
 /**
- * LangGraph-based OpenClaude Manager
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ *
+ * LangGraph-based OpenAgent Manager
  * Manages the lifecycle of LangGraph ReAct agent with advanced features
  */
 
-import { OpenClaude } from "./OpenClaude.js";
+import { OpenAgent } from "./OpenAgent.js";
 import { AgentContext } from "../types/agent.js";
 import { ProjectSetup } from "../core/setup/ProjectSetup.js";
 import chalk from "chalk";
 
-export class OpenClaudeManager {
-  private static instance: OpenClaudeManager;
-  private agent: OpenClaude | null = null;
+export class OpenAgentManager {
+  private static instance: OpenAgentManager;
+  private agent: OpenAgent | null = null;
   private context: AgentContext | null = null;
   private isInitialized: boolean = false;
 
   private constructor() {}
 
-  public static getInstance(): OpenClaudeManager {
-    if (!OpenClaudeManager.instance) {
-      OpenClaudeManager.instance = new OpenClaudeManager();
+  public static getInstance(): OpenAgentManager {
+    if (!OpenAgentManager.instance) {
+      OpenAgentManager.instance = new OpenAgentManager();
     }
-    return OpenClaudeManager.instance;
+    return OpenAgentManager.instance;
   }
 
   /**
-   * Initialize the LangGraph-based OpenClaude agent
+   * Initialize the LangGraph-based OpenAgent agent
    */
   public async initialize(apiKey: string, projectPath: string): Promise<void> {
     try {
-      console.log(chalk.blue("🔧 Initializing OpenClaude with LangGraph..."));
+      console.log(chalk.blue("🔧 Initializing OpenAgent with LangGraph..."));
 
-      // Initialize project setup (creates .openclaude folder and config files)
+      // Initialize project setup (creates .openagent folder and config files)
       const projectSetup = new ProjectSetup(projectPath);
       await projectSetup.initialize();
 
@@ -41,8 +44,8 @@ export class OpenClaudeManager {
       // Build comprehensive agent context
       this.context = await this.buildAgentContext(projectPath);
 
-      // Create LangGraph-based OpenClaude agent
-      this.agent = new OpenClaude(
+      // Create LangGraph-based OpenAgent agent
+      this.agent = new OpenAgent(
         apiKey,
         this.context,
         mcpServers,
@@ -54,7 +57,7 @@ export class OpenClaudeManager {
 
       this.isInitialized = true;
       console.log(
-        chalk.green("✅ OpenClaude LangGraph agent initialized successfully!")
+        chalk.green("✅ OpenAgent initialized successfully!")
       );
       console.log(
         chalk.cyan(
@@ -63,7 +66,7 @@ export class OpenClaudeManager {
       );
     } catch (error) {
       console.error(
-        chalk.red("❌ Failed to initialize OpenClaude agent:"),
+        chalk.red("❌ Failed to initialize OpenAgent agent:"),
         error
       );
       throw new Error(
@@ -261,7 +264,7 @@ export class OpenClaudeManager {
    */
   public async reset(): Promise<void> {
     try {
-      console.log(chalk.yellow("🔄 Resetting OpenClaude agent..."));
+      console.log(chalk.yellow("🔄 Resetting OpenAgent agent..."));
 
       if (this.agent) {
         // Clean up agent resources
@@ -297,7 +300,7 @@ export class OpenClaudeManager {
         successRate: config.metadata.usage.successRate,
         avgResponseTime: config.metadata.usage.avgResponseTime,
       },
-      capabilities: config.capabilities.map((cap) => ({
+      capabilities: config.capabilities.map((cap: any) => ({
         name: cap.name,
         description: cap.description,
         enabled: cap.enabled,
@@ -323,7 +326,7 @@ export class OpenClaudeManager {
     try {
       console.log(chalk.blue("⚙️ Updating agent configuration..."));
 
-      // Note: This would require extending the OpenClaude class with configuration update methods
+      // Note: This would require extending the OpenAgent class with configuration update methods
       // For now, we log the intended updates
       console.log(chalk.cyan("Configuration updates:"), updates);
       console.log(
@@ -430,7 +433,7 @@ export class OpenClaudeManager {
    */
   public async shutdown(): Promise<void> {
     try {
-      console.log(chalk.yellow("⏸️ Shutting down OpenClaude agent..."));
+      console.log(chalk.yellow("⏸️ Shutting down OpenAgent agent..."));
 
       if (this.agent) {
         // Perform any necessary cleanup
