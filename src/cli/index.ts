@@ -8,13 +8,13 @@ import {
 } from './interface/logo.js';
 import { clearScreen } from './interface/components.js';
 import { StreamingHandler } from './interface/StreamingHandler.js';
-import { AgentManager } from '../agents/AgentManager.js';
+import { OpenClaudeManager } from "../agents/OpenClaudeManager.js";
 
 /**
  * OpenClaude CLI Application - Direct Chat Interface
  */
 
-const agentManager = AgentManager.getInstance();
+const agentManager = OpenClaudeManager.getInstance();
 
 // Global streaming handler for agent feedback
 export let globalStreamingHandler: StreamingHandler | null = null;

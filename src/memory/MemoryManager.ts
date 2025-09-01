@@ -1,6 +1,6 @@
 /**
  * Core Memory Manager for OpenClaude
- * Implements persistent, never-forget memory with intelligent retrieval
+ * Implements persistent, never-forget memory with intelligent retrievalls
  */
 
 import sqlite3 from 'sqlite3';

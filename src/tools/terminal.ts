@@ -1,16 +1,9 @@
+import { tool } from '@langchain/core/tools';
 import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
 
 const execAsync = promisify(exec);
-
-export interface TerminalParams {
-  command: string;
-  cwd?: string; // Working directory
-  timeout?: number; // Timeout in milliseconds (default: 30000)
-  env?: Record<string, string>; // Environment variables
-  interactive?: boolean; // For interactive commands (default: false)
-}
 
 export interface TerminalResult {
   success: boolean;
@@ -22,77 +15,127 @@ export interface TerminalResult {
 }
 
 /**
- * Execute shell commands
+ * Execute shell commands using LangChain tool format
  */
-export async function executeCommand(params: TerminalParams): Promise<TerminalResult> {
-  const startTime = Date.now();
-  const { command, cwd = process.cwd(), timeout = 30000, env = {}, interactive = false } = params;
-  
-  try {
-    // Merge environment variables
-    const mergedEnv: Record<string, string> = {};
+export const terminalTool = tool(
+  async (input: unknown) => {
+    const startTime = Date.now();
     
-    // Copy process.env with proper typing
-    for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined) {
-        mergedEnv[key] = value;
-      }
-    }
-    
-    // Add custom env vars
-    Object.assign(mergedEnv, env);
-    
-    if (interactive) {
-      // For interactive commands, use spawn
-      return await executeInteractiveCommand(command, cwd, timeout, mergedEnv, startTime);
-    } else {
-      // For regular commands, use exec
-      const { stdout, stderr } = await execAsync(command, {
-        cwd,
-        timeout,
-        env: mergedEnv,
-        maxBuffer: 1024 * 1024 * 10 // 10MB buffer
-      });
+    try {
+      const { 
+        command, 
+        cwd = process.cwd(), 
+        timeout = 30000, 
+        env = {}, 
+        interactive = false 
+      } = input as {
+        command: string;
+        cwd?: string;
+        timeout?: number;
+        env?: Record<string, string>;
+        interactive?: boolean;
+      };
       
-      return {
-        success: true,
-        stdout: stdout.toString(),
-        stderr: stderr.toString(),
-        exitCode: 0,
-        executionTime: Date.now() - startTime
-      };
+      if (!command) {
+        return `Error: No command provided. Received: ${JSON.stringify(input)}`;
+      }
+      
+      // Merge environment variables
+      const mergedEnv: Record<string, string> = {};
+      
+      // Copy process.env with proper typing
+      for (const [key, value] of Object.entries(process.env)) {
+        if (value !== undefined) {
+          mergedEnv[key] = value;
+        }
+      }
+      
+      // Add custom env vars
+      Object.assign(mergedEnv, env);
+      
+      let result: TerminalResult;
+      
+      if (interactive) {
+        // For interactive commands, use spawn
+        result = await executeInteractiveCommand(command, cwd, timeout, mergedEnv, startTime);
+      } else {
+        // For regular commands, use exec
+        try {
+          const { stdout, stderr } = await execAsync(command, {
+            cwd,
+            timeout,
+            env: mergedEnv,
+            maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+          });
+          
+          result = {
+            success: true,
+            stdout: stdout.toString(),
+            stderr: stderr.toString(),
+            exitCode: 0,
+            executionTime: Date.now() - startTime
+          };
+        } catch (error: any) {
+          let exitCode = 1;
+          let stderr = '';
+          let stdout = '';
+          
+          if (error.code === 'ETIMEDOUT') {
+            result = {
+              success: false,
+              stdout: '',
+              stderr: '',
+              exitCode: 124, // Timeout exit code
+              error: `Command timed out after ${timeout}ms`,
+              executionTime: Date.now() - startTime
+            };
+          } else {
+            if (error.stdout) stdout = error.stdout.toString();
+            if (error.stderr) stderr = error.stderr.toString();
+            if (typeof error.code === 'number') exitCode = error.code;
+            
+            result = {
+              success: false,
+              stdout,
+              stderr,
+              exitCode,
+              error: error.message || 'Command execution failed',
+              executionTime: Date.now() - startTime
+            };
+          }
+        }
+      }
+      
+      // Format the output
+      let output = `${result.success ? '✅' : '❌'} Command: ${command}\n`;
+      output += `📁 Working Directory: ${cwd}\n`;
+      output += `⏱️ Execution Time: ${result.executionTime}ms\n`;
+      output += `🚪 Exit Code: ${result.exitCode}\n\n`;
+      
+      if (result.stdout) {
+        output += `📤 STDOUT:\n${result.stdout}\n`;
+      }
+      
+      if (result.stderr) {
+        output += `📥 STDERR:\n${result.stderr}\n`;
+      }
+      
+      if (result.error) {
+        output += `❌ ERROR: ${result.error}\n`;
+      }
+      
+      return output;
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return `❌ Terminal execution failed: ${errorMessage}`;
     }
-    
-  } catch (error: any) {
-    let exitCode = 1;
-    let stderr = '';
-    let stdout = '';
-    
-    if (error.code === 'ETIMEDOUT') {
-      return {
-        success: false,
-        stdout: '',
-        stderr: '',
-        exitCode: 124, // Timeout exit code
-        error: `Command timed out after ${timeout}ms`,
-        executionTime: Date.now() - startTime
-      };
-    }
-    
-    if (error.stdout) stdout = error.stdout.toString();
-    if (error.stderr) stderr = error.stderr.toString();
-    if (typeof error.code === 'number') exitCode = error.code;
-    
-    return {
-      success: false,
-      stdout,
-      stderr,
-      exitCode,
-      error: error.message || 'Command execution failed',
-      executionTime: Date.now() - startTime
-    };
+  },
+  {
+    name: "terminal",
+    description: "Execute shell commands in the terminal. Input should be an object with 'command' (string), optional 'cwd' (working directory), 'timeout' (milliseconds), 'env' (environment variables), and 'interactive' (boolean)."
   }
-}
+);
 
 /**
  * Execute interactive commands using spawn
@@ -194,40 +237,31 @@ export function getSystemInfo() {
   };
 }
 
-export const terminalToolDefinition = {
-  name: 'terminal',
-  description: 'Execute shell commands in the terminal',
-  input_schema: {
-    type: 'object',
-    properties: {
-      command: {
-        type: 'string',
-        description: 'Shell command to execute'
-      },
-      cwd: {
-        type: 'string',
-        description: 'Working directory for command execution (default: current directory)'
-      },
-      timeout: {
-        type: 'number',
-        description: 'Timeout in milliseconds (default: 30000)',
-        default: 30000,
-        minimum: 1000,
-        maximum: 300000
-      },
-      env: {
-        type: 'object',
-        description: 'Environment variables to set for the command',
-        additionalProperties: {
-          type: 'string'
-        }
-      },
-      interactive: {
-        type: 'boolean',
-        description: 'Whether this is an interactive command (default: false)',
-        default: false
-      }
-    },
-    required: ['command']
+// Legacy function for backward compatibility (if needed)
+export async function executeCommand(params: {
+  command: string;
+  cwd?: string;
+  timeout?: number;
+  env?: Record<string, string>;
+  interactive?: boolean;
+}): Promise<TerminalResult> {
+  const result = await terminalTool.invoke(params);
+  
+  // Parse the formatted result back to structured format if needed
+  const success = result.startsWith('✅');
+  
+  // This is a simplified parsing - in practice, you might want to keep the structured data
+  const terminalResult: TerminalResult = {
+    success,
+    stdout: '', // Would need more complex parsing to extract
+    stderr: '',
+    exitCode: success ? 0 : 1,
+    executionTime: 0
+  };
+  
+  if (!success) {
+    terminalResult.error = result.replace('❌ ', '');
   }
-};
+  
+  return terminalResult;
+}

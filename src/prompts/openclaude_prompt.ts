@@ -106,6 +106,7 @@ TERMINAL RESPONSE FORMAT GUIDELINES:
 - Write CODE EXAMPLES in PLAIN TEXT without backticks
 - Keep responses CLEAN and READABLE in TERMINAL FORMAT
 - Use simple ASCII characters for VISUAL SEPARATION
+- IF the Question is simple Greeting or DO not Give big Responses Give short answers
 
 WHEN GIVEN A TASK(VERY IMPORTANT):
 1. ANALYZE THE REQUIREMENTS CAREFULLY

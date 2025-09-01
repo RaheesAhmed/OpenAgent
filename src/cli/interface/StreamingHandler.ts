@@ -9,6 +9,7 @@ export class StreamingHandler {
   private frameIndex = 0;
   private currentStatus = '';
   private isActive = false;
+  private isStopped = false;
   private startTime = Date.now();
 
   /**
@@ -19,10 +20,11 @@ export class StreamingHandler {
     
     this.currentStatus = status;
     this.isActive = true;
+    this.isStopped = false;  // Reset stopped flag for new session
     this.startTime = Date.now();
     
     this.interval = setInterval(() => {
-      if (this.isActive) {
+      if (this.isActive && this.interval && !this.isStopped) {
         const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
         const timeStr = elapsed > 0 ? chalk.dim(` (${elapsed}s)`) : '';
         process.stdout.write(`\r${chalk.cyan(this.frames[this.frameIndex])} ${chalk.dim(this.currentStatus)}${timeStr}...`);
@@ -60,12 +62,19 @@ export class StreamingHandler {
    * Stop the streaming handler and clear the line
    */
   stop(): void {
+    this.isStopped = true;  // Immediately prevent any new writes
+    this.isActive = false;
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
     }
-    this.isActive = false;
     this.clearLine();
+    // Ensure line is fully cleared after interval stops
+    setTimeout(() => {
+      if (this.isStopped) {  // Only clear if still stopped
+        this.clearLine();
+      }
+    }, 100);
   }
 
   /**
@@ -90,7 +99,7 @@ export class StreamingHandler {
    * Clear the current line
    */
   private clearLine(): void {
-    process.stdout.write('\r' + ' '.repeat(80) + '\r');
+    process.stdout.write('\r\x1B[K'); // Move to start of line and clear to end
   }
 
   /**
