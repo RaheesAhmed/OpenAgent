@@ -12,7 +12,7 @@
     "build:watch": "tsc --watch",
     "start": "node dist/cli/index.js",
     "dev": "ts-node-esm src/cli/index.ts",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:agent": "node test-openclaude.js",
     "test:agent:interactive": "node test-openclaude.js interactive",

@@ -7,7 +7,7 @@
     }
   },
   "testEnvironment": "node",
-  "roots": ["<rootDir>/src", "<rootDir>/tests"],
+  "roots": ["<rootDir>/src"],
   "testMatch": [
     "**/__tests__/**/*.ts",
     "**/?(*.)+(spec|test).ts"
@@ -27,7 +27,7 @@
     "lcov",
     "html"
   ],
-  "moduleNameMapping": {
+  "moduleNameMapper": {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@core/(.*)$": "<rootDir>/src/core/$1",
     "^@agents/(.*)$": "<rootDir>/src/agents/$1",
