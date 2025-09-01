@@ -1,0 +1,89 @@
+name: ❓ Support & Questions
+description: Get help with setup, configuration, or usage
+title: "[SUPPORT] "
+labels: ["question", "support"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Need help with OpenClaude? Please provide as much detail as possible so we can assist you quickly.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What do you need help with?
+      placeholder: Describe your question or what you're trying to achieve...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What area does your question relate to?
+      options:
+        - Installation & Setup
+        - Configuration
+        - Usage & Features
+        - API Integration
+        - MCP Servers
+        - Performance
+        - Troubleshooting
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: attempted
+    attributes:
+      label: What Have You Tried?
+      description: What steps have you already attempted?
+      placeholder: Describe what you've tried so far...
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Please provide your environment information
+      value: |
+        - OS: [e.g., Windows 11, macOS 13, Ubuntu 22.04]
+        - Node.js version: [e.g., 18.17.0]
+        - OpenClaude version: [e.g., v1.0.0]
+        - AI Model: [e.g., claude-sonnet-4-20250514]
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration (Optional)
+      description: Your configuration files (remove sensitive data like API keys)
+      render: json
+      placeholder: |
+        {
+          "model": "anthropic:claude-sonnet-4-20250514",
+          "temperature": 0.1
+        }
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other information that might help us understand your question
+      placeholder: Add any other context about your question...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues and discussions
+          required: true
+        - label: I have read the README and Contributing Guide
+          required: true
+        - label: I have removed any sensitive information (API keys, personal data)
+          required: true

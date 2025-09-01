@@ -1,0 +1,102 @@
+name: 💡 Feature Request
+description: Suggest a new feature or enhancement
+title: "[FEATURE] "
+labels: ["enhancement", "needs-discussion"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please describe your idea in detail.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What use case does it address?
+      placeholder: Describe the problem or use case that this feature would solve...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this feature to work?
+      placeholder: Describe your proposed solution in detail...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Have you considered other approaches to solve this problem?
+      placeholder: Describe any alternative solutions you've considered...
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Usage Examples
+      description: How would users interact with this feature?
+      placeholder: |
+        Example usage:
+        ```bash
+        openclaude --new-feature example
+        ```
+      render: markdown
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact Level
+      description: Who would benefit from this feature?
+      options:
+        - All users
+        - Power users / advanced users
+        - New users
+        - Developers/contributors
+        - Specific use case
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve workflow
+        - High - Blocking current work
+        - Critical - Essential for adoption
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Ideas
+      description: Do you have thoughts on how this could be implemented?
+      placeholder: Any technical details or implementation ideas...
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Add any other context, screenshots, or examples
+      placeholder: Any additional information that would help...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues for similar feature requests
+          required: true
+        - label: This feature aligns with OpenClaude's goals
+          required: true
+        - label: I would be willing to help implement this feature
+          required: false

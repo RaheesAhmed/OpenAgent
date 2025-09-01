@@ -187,8 +187,9 @@ src/
 
 ## 🤝 Contributing
 
-We welcome contributions! Please:
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed instructions.
 
+Quick steps:
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
