@@ -156,7 +156,7 @@ Add MCP servers in `.openagent/mcp-servers.json`:
 ```
 
 ### Custom AI Rules
-Set project-specific rules in `.openclaude/rules.md`:
+Set project-specific rules in `.openagent/rules.md`:
 
 ```markdown
 # Project Rules
@@ -197,7 +197,7 @@ You: Optimize this SQL query for better performance
 
 **What you'll see:**
 ```bash
-⠋ OpenClaude is thinking (2s)...
+⠋ OpenAgent is thinking (2s)...
 🔧 read_file
 🔧 create_file
 
@@ -211,7 +211,7 @@ You: Optimize this SQL query for better performance
 ## 🏗️ Project Structure
 
 ```
-.openclaude/
+.openagent/
 ├── config.json           # Model and behavior configuration
 ├── mcp-servers.json      # MCP server setup
 ├── rules.md              # Custom AI rules and guidelines
@@ -257,8 +257,8 @@ Quick steps:
 
 ### Development Setup
 ```bash
-git clone https://github.com/RaheesAhmed/OpenClaude.git
-cd OpenClaude
+git clone https://github.com/RaheesAhmed/OpenAgent.git
+cd OpenAgent
 npm install
 npm run dev
 ```
@@ -273,8 +273,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**[🐛 Report Bug](https://github.com/RaheesAhmed/OpenClaude/issues) • [💡 Request Feature](https://github.com/RaheesAhmed/OpenClaude/issues)**
+**[🐛 Report Bug](https://github.com/RaheesAhmed/OpenAgent/issues) • [💡 Request Feature](https://github.com/RaheesAhmed/OpenAgent/issues)**
 
-*OpenClaude - Your configurable AI development assistant*
+*OpenAgent - Your configurable AI development assistant*
 
 </div>
