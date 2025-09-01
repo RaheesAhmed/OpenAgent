@@ -3,9 +3,8 @@
   
   **OpenClaude - Open-source AI development assistant**
   
-  [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-  [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-  [![Claude](https://img.shields.io/badge/Claude-4A4A4A?style=for-the-badge&logo=anthropic&logoColor=white)](https://www.anthropic.com/)
+  [![GitHub Stars](https://img.shields.io/github/stars/RaheesAhmed/OpenClaude?style=for-the-badge)](https://github.com/RaheesAhmed/OpenClaude/stargazers)
+  [![GitHub Forks](https://img.shields.io/github/forks/RaheesAhmed/OpenClaude?style=for-the-badge)](https://github.com/RaheesAhmed/OpenClaude/network)
   [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
   
   ## ⚠️ **UNDER ACTIVE DEVELOPMENT - IN BETA**
