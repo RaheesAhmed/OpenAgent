@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+
  * Advanced Context Manager for OpenClaude
  * Implements context persistence, versioning, and intelligent recovery
  * Addresses Claude Code weaknesses: context leak, repeated questions, state confusion

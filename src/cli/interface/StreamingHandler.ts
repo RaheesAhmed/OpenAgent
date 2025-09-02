@@ -1,13 +1,18 @@
-import chalk from 'chalk';
+/**
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ */
+
+import chalk from "chalk";
 
 /**
  * Professional streaming handler with spinner and status updates
  */
 export class StreamingHandler {
-  private frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  private frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
   private interval: NodeJS.Timeout | null = null;
   private frameIndex = 0;
-  private currentStatus = '';
+  private currentStatus = "";
   private isActive = false;
   private isStopped = false;
   private startTime = Date.now();
@@ -15,19 +20,23 @@ export class StreamingHandler {
   /**
    * Start the streaming handler with initial status
    */
-  start(status: string = 'Processing'): void {
+  start(status: string = "Processing"): void {
     if (this.isActive) return;
-    
+
     this.currentStatus = status;
     this.isActive = true;
-    this.isStopped = false;  // Reset stopped flag for new session
+    this.isStopped = false; // Reset stopped flag for new session
     this.startTime = Date.now();
-    
+
     this.interval = setInterval(() => {
       if (this.isActive && this.interval && !this.isStopped) {
         const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-        const timeStr = elapsed > 0 ? chalk.dim(` (${elapsed}s)`) : '';
-        process.stdout.write(`\r${chalk.cyan(this.frames[this.frameIndex])} ${chalk.dim(this.currentStatus)}${timeStr}...`);
+        const timeStr = elapsed > 0 ? chalk.dim(` (${elapsed}s)`) : "";
+        process.stdout.write(
+          `\r${chalk.cyan(this.frames[this.frameIndex])} ${chalk.dim(
+            this.currentStatus
+          )}${timeStr}...`
+        );
         this.frameIndex = (this.frameIndex + 1) % this.frames.length;
       }
     }, 80);
@@ -43,17 +52,20 @@ export class StreamingHandler {
   /**
    * Show a brief status update without changing the main status
    */
-  showUpdate(message: string, type: 'info' | 'success' | 'warning' = 'info'): void {
+  showUpdate(
+    message: string,
+    type: "info" | "success" | "warning" = "info"
+  ): void {
     if (!this.isActive) return;
-    
+
     this.clearLine();
-    
+
     const colors = {
       info: chalk.blue,
       success: chalk.green,
-      warning: chalk.yellow
+      warning: chalk.yellow,
     };
-    
+
     console.log(colors[type](`→ ${message}`));
     // Don't restart the spinner, it will continue on next interval
   }
@@ -62,7 +74,7 @@ export class StreamingHandler {
    * Stop the streaming handler and clear the line
    */
   stop(): void {
-    this.isStopped = true;  // Immediately prevent any new writes
+    this.isStopped = true; // Immediately prevent any new writes
     this.isActive = false;
     if (this.interval) {
       clearInterval(this.interval);
@@ -71,7 +83,8 @@ export class StreamingHandler {
     this.clearLine();
     // Ensure line is fully cleared after interval stops
     setTimeout(() => {
-      if (this.isStopped) {  // Only clear if still stopped
+      if (this.isStopped) {
+        // Only clear if still stopped
         this.clearLine();
       }
     }, 100);
@@ -80,10 +93,10 @@ export class StreamingHandler {
   /**
    * Show final completion message
    */
-  complete(message: string = 'Complete'): void {
+  complete(message: string = "Complete"): void {
     this.stop();
     const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-    const timeStr = elapsed > 0 ? chalk.dim(` (${elapsed}s)`) : '';
+    const timeStr = elapsed > 0 ? chalk.dim(` (${elapsed}s)`) : "";
     console.log(chalk.green(`✓ ${message}${timeStr}`));
   }
 
@@ -99,7 +112,7 @@ export class StreamingHandler {
    * Clear the current line
    */
   private clearLine(): void {
-    process.stdout.write('\r\x1B[K'); // Move to start of line and clear to end
+    process.stdout.write("\r\x1B[K"); // Move to start of line and clear to end
   }
 
   /**

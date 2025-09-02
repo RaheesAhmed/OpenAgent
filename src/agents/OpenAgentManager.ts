@@ -31,7 +31,7 @@ export class OpenAgentManager {
    */
   public async initialize(apiKey: string, projectPath: string): Promise<void> {
     try {
-      console.log(chalk.blue("🔧 Initializing OpenAgent with LangGraph..."));
+     
 
       // Initialize project setup (creates .openagent folder and config files)
       const projectSetup = new ProjectSetup(projectPath);
@@ -56,14 +56,8 @@ export class OpenAgentManager {
       await this.agent.initialize();
 
       this.isInitialized = true;
-      console.log(
-        chalk.green("✅ OpenAgent initialized successfully!")
-      );
-      console.log(
-        chalk.cyan(
-          "🎯 Features enabled: Memory, Human-in-Loop, Checkpoints, Streaming"
-        )
-      );
+      
+      
     } catch (error) {
       console.error(
         chalk.red("❌ Failed to initialize OpenAgent agent:"),

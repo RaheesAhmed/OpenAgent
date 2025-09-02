@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+
  * Code Quality Assurance Pipeline for OpenAgent
  * Addresses Claude Code weakness: Bug generation, hallucinations, security vulnerabilities
  * Implements multi-layer validation, hallucination detection, and security scanning

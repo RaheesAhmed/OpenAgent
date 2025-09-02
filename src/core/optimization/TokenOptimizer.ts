@@ -1,4 +1,7 @@
 /**
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+
  * Advanced Token Optimization Engine for OpenClaude
  * Addresses Claude Code weakness: 40% token waste through intelligent optimization
  * Implements semantic caching, context compression, and predictive loading
