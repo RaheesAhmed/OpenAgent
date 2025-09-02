@@ -69,9 +69,7 @@ test-report.*
 .cache/
 *.cache
 /.openagent/
-/claude_docs/
-claudecode_weakness.md
 openclaude_dev_prompt.md
-ClaudeCode-features.md
 features_to_implment.md
-GITHUB_SETUP.md
+/ClaudeCode-Docs/
+/langgraph/

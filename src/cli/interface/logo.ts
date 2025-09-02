@@ -7,7 +7,7 @@
  * OpenAgent ASCII Logo - Modern and Clean Design
  */
 import chalk from "chalk";
-export const OPENAGENT_LOGO = `
+export const OPENAGENT_LOGO =`
  ██████╗ ██████╗ ███████╗███╗   ██╗     █████╗  ██████╗ ███████╗███╗   ██╗████████╗
 ██╔═══██╗██╔══██╗██╔════╝████╗  ██║    ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝
 ██║   ██║██████╔╝█████╗  ██╔██╗ ██║    ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║
