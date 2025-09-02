@@ -29,6 +29,24 @@
 
 ---
 
+## 📖 Project Documentation
+
+### 📋 Complete Code Summary
+For developers who want to understand the entire OpenAgent codebase quickly, we provide a comprehensive code summary:
+
+**[📄 CODE_SUMMERY.md](CODE_SUMMERY.md)** - Complete project architecture, file relationships, and development guide
+
+This document includes:
+- 🏗️ **Complete Architecture Overview** - All 8 system layers explained
+- 🔗 **File Relationships** - How every file connects and interacts
+- 📊 **Code Quality Analysis** - Health metrics, dead code analysis, optimization opportunities
+- 🎯 **Developer Onboarding** - Quick start checklist for new contributors
+- 🛠️ **Modification Guide** - Exactly which files to change for different types of updates
+- 📈 **Performance Metrics** - Project health score, token optimization insights
+
+
+---
+
 ## 🚀 Quick Start
 
 ```bash
