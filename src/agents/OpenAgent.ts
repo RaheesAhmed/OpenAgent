@@ -429,15 +429,11 @@ export class OpenAgent {
     const toolUses: any[] = [];
     let usage = { input_tokens: 0, output_tokens: 0 };
     let hasStartedStreaming = false;
+    let spinnerStopped = false;
     
 
     try {
       const { globalStreamingHandler } = await import('../cli/index.js').catch(() => ({ globalStreamingHandler: null }));
-
-      // Stop spinner immediately when streaming starts to prevent interference
-      if (globalStreamingHandler) {
-        globalStreamingHandler.stop();
-      }
 
       // Process enhanced streaming with updates and debug info
       for await (const [streamType, streamData] of stream) {
@@ -446,6 +442,12 @@ export class OpenAgent {
           const result = await this.handleUpdateEvent(streamData);
           
           if (result.content) {
+            // Stop spinner only when actual content starts streaming
+            if (!spinnerStopped && globalStreamingHandler) {
+              globalStreamingHandler.stop();
+              spinnerStopped = true;
+            }
+            
             fullContent += result.content;
             if (!hasStartedStreaming) {
               hasStartedStreaming = true;
@@ -464,6 +466,12 @@ export class OpenAgent {
           // Handle debug events for step visibility
           this.handleDebugEvent(streamData);
         } else if (streamType === 'messages') {
+          // Stop spinner when actual message content starts streaming
+          if (!spinnerStopped && globalStreamingHandler) {
+            globalStreamingHandler.stop();
+            spinnerStopped = true;
+          }
+          
           // Handle message streaming (actual LLM response content)
           this.handleMessageStream(streamData);
           if (!hasStartedStreaming) {
@@ -472,12 +480,26 @@ export class OpenAgent {
         }
       }
 
+      // If spinner was never stopped (no content streamed), stop it now
+      if (!spinnerStopped && globalStreamingHandler) {
+        globalStreamingHandler.stop();
+      }
+
       if (hasStartedStreaming && fullContent.trim()) {
         process.stdout.write('\n');
       }
 
     } catch (error) {
       console.error(chalk.red('Error handling enhanced LangGraph stream:'), error);
+      // Make sure spinner is stopped even on error
+      try {
+        const { globalStreamingHandler } = await import('../cli/index.js').catch(() => ({ globalStreamingHandler: null }));
+        if (globalStreamingHandler) {
+          globalStreamingHandler.stop();
+        }
+      } catch (importError) {
+        // Ignore import errors in error handling
+      }
     }
 
     return { content: fullContent, toolUses, usage };
