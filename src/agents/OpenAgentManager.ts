@@ -371,7 +371,7 @@ export class OpenAgentManager {
         },
       },
       session: {
-        id: `langgraph-session-${Date.now()}`,
+        id: `openagent-session-${Date.now()}`,
         startTime: new Date(),
         lastActivity: new Date(),
         messageHistory: [],

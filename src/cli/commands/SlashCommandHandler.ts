@@ -710,29 +710,62 @@ export class SlashCommandHandler {
   }
 
   /**
-   * Show all available commands
+   * Show all available commands in a clean table format
    */
   private showAllCommands(): void {
     const primary = chalk.hex(BRAND_COLORS.primary).bold;
     const secondary = chalk.hex(BRAND_COLORS.secondary);
     const text = chalk.hex(BRAND_COLORS.text);
-    const divider = chalk.hex(BRAND_COLORS.muted)('─'.repeat(50));
+    const muted = chalk.hex(BRAND_COLORS.muted);
+    const success = chalk.hex(BRAND_COLORS.success);
 
-    console.log(`\n${primary('📋 Available Slash Commands')}`);
-    console.log(divider);
+    console.log(`\n${primary('📋 Available Slash Commands')}\n`);
 
     const commands = this.getCommands().sort((a, b) => a.name.localeCompare(b.name));
     
-    for (const command of commands) {
-      const aliases = command.aliases ? ` (${command.aliases.map(a => `/${a}`).join(', ')})` : '';
-      console.log(`${primary(`/${command.name}`)}${secondary(aliases)}`);
-      console.log(`  ${text(command.description)}`);
-      console.log(`  ${chalk.hex(BRAND_COLORS.muted)(`Usage: ${command.usage}`)}`);
-      console.log();
-    }
+    // Fixed column widths for better terminal compatibility
+    const commandWidth = 20;
+    const descWidth = 35;
+    const usageWidth = 25;
 
-    console.log(divider);
-    console.log(text('💡 Type /help <command> for detailed help on a specific command'));
+    // Simple border using dashes and pipes
+    const border = muted('─'.repeat(commandWidth + descWidth + usageWidth + 8));
+    
+    console.log(border);
+    
+    // Header row
+    const commandHeader = success('COMMAND'.padEnd(commandWidth));
+    const descHeader = success('DESCRIPTION'.padEnd(descWidth));
+    const usageHeader = success('USAGE'.padEnd(usageWidth));
+    
+    console.log(`${muted('│')} ${commandHeader} ${muted('│')} ${descHeader} ${muted('│')} ${usageHeader} ${muted('│')}`);
+    console.log(border);
+    
+    // Command rows
+    commands.forEach((command) => {
+      const aliases = command.aliases ? ` (${command.aliases.map(a => `/${a}`).join(', ')})` : '';
+      const commandName = `/${command.name}${aliases}`;
+      
+      // Truncate if too long and add ellipsis
+      const displayCommand = commandName.length > commandWidth ?
+        commandName.substring(0, commandWidth - 3) + '...' :
+        commandName.padEnd(commandWidth);
+        
+      const displayDesc = command.description.length > descWidth ?
+        command.description.substring(0, descWidth - 3) + '...' :
+        command.description.padEnd(descWidth);
+        
+      const displayUsage = command.usage.length > usageWidth ?
+        command.usage.substring(0, usageWidth - 3) + '...' :
+        command.usage.padEnd(usageWidth);
+      
+      console.log(`${muted('│')} ${primary(displayCommand)} ${muted('│')} ${text(displayDesc)} ${muted('│')} ${secondary(displayUsage)} ${muted('│')}`);
+    });
+    
+    console.log(border);
+    console.log();
+    console.log(text('💡 Type ') + primary('/help <command>') + text(' for detailed help'));
+    console.log(text('🚀 Example: ') + primary('/help status') + text(' or ') + primary('/help reset'));
     console.log();
   }
 
