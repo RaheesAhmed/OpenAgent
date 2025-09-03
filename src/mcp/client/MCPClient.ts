@@ -26,13 +26,16 @@ export class MCPClientManager {
       // Load MCP servers from configuration file
       const mcpServers = await this.loadMCPServersConfig();
 
-      // Create and initialize MCP client with user's configured servers
-      this.client = new MultiServerMCPClient({
-        mcpServers,
-      });
-
-      // Silent initialization for cleaner user experience
-      // MCP servers loaded successfully
+      // Only initialize MCP client if servers are configured
+      if (Object.keys(mcpServers).length > 0) {
+        this.client = new MultiServerMCPClient({
+          mcpServers,
+        });
+        // MCP client initialized with configured servers
+      } else {
+        // No MCP servers configured - client remains null
+        console.log("📋 No MCP servers configured - MCP functionality disabled");
+      }
     } catch (error) {
       console.error("❌ Failed to initialize MCP client:", error);
       throw error;
@@ -87,41 +90,20 @@ export class MCPClientManager {
         }
       }
 
-      // Fallback to default filesystem server if no servers configured
+      // No fallback servers - only use what's explicitly configured
       if (Object.keys(mcpServers).length === 0) {
-        console.log(
-          "⚠️  No enabled MCP servers found, using default filesystem server"
-        );
-        mcpServers["filesystem"] = {
-          command: "npx",
-          args: [
-            "-y",
-            "@modelcontextprotocol/server-filesystem",
-            this.projectPath,
-          ],
-          transport: "stdio",
-        };
+        console.log("📋 No MCP servers configured - no MCP tools will be available");
       }
 
       return mcpServers;
     } catch (error) {
       console.log(
-        "⚠️  Could not load MCP configuration, using default filesystem server"
+        "⚠️  Could not load MCP configuration - no MCP tools will be available"
       );
       console.log(`   Config path: ${configPath}`);
 
-      // Fallback configuration
-      return {
-        filesystem: {
-          command: "npx",
-          args: [
-            "-y",
-            "@modelcontextprotocol/server-filesystem",
-            this.projectPath,
-          ],
-          transport: "stdio",
-        },
-      };
+      // Return empty configuration - no fallback servers
+      return {};
     }
   }
 
@@ -130,7 +112,8 @@ export class MCPClientManager {
    */
   async getTools() {
     if (!this.client) {
-      throw new Error("MCP client not initialized. Call initialize() first.");
+      // Return empty array if no MCP client (no servers configured)
+      return [];
     }
 
     try {
