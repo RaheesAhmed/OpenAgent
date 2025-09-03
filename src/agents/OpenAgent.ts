@@ -29,6 +29,7 @@ import { MemoryIntegration } from '../memory/index.js';
 import { MCPClientManager } from '../mcp/client/MCPClient.js';
 
 import { allFileTools } from "../tools/fileTools.js";
+import { allTerminalTools } from "../tools/terminal.js";
 
 
 // Configuration interface for OpenAgent
@@ -179,8 +180,8 @@ export class OpenAgent {
       // Get MCP tools (only from mcp-servers.json, no built-in tools)
       const mcpTools = await this.mcpClient.getTools();
 
-      // Combine all tools (custom file tools + user-configured MCP tools)
-      const allTools = [...memoryTools, ...mcpTools, ...allFileTools];
+      // Combine all tools (custom file tools + terminal tools + user-configured MCP tools)
+      const allTools = [...memoryTools, ...mcpTools, ...allFileTools, ...allTerminalTools];
 
       // Create the LangGraph ReAct agent
       this.agent = createReactAgent({

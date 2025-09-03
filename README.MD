@@ -18,6 +18,32 @@
 
 ---
 
+## 📋 Table of Contents
+
+### 🚀 [Quick Start](#-quick-start)
+### ✨ [Features](#-features)
+### 📖 [Project Documentation](#-project-documentation)
+### 🎮 [Slash Commands](#-slash-commands)
+   - [📋 Core Commands](#-core-commands)
+   - [🔄 Session Management](#-session-management)
+   - [🛠️ Development Tools](#️-development-tools)
+   - [💾 State Management](#-state-management)
+   - [💡 Usage Examples](#-usage-examples)
+### ⚙️ [Configuration](#️-configuration)
+   - [Model Configuration](#model-configuration)
+   - [MCP Server Configuration](#mcp-server-configuration)
+   - [Custom AI Rules](#custom-ai-rules)
+### 💬 [Usage Examples](#-usage-examples-1)
+### 🏗️ [Project Structure](#️-project-structure)
+### 🔧 [Built-in Capabilities](#-built-in-capabilities)
+   - [File Operations (via MCP)](#file-operations-via-mcp)
+   - [Development Tools](#development-tools)
+### 🤝 [Contributing](#-contributing)
+   - [Development Setup](#development-setup)
+### 📄 [License](#-license)
+
+---
+
 ## ✨ Features
 
 🧠 **Smart Context Management** - Remembers your project state across sessions  
