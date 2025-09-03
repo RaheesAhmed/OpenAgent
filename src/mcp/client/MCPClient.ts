@@ -26,15 +26,14 @@ export class MCPClientManager {
       // Load MCP servers from configuration file
       const mcpServers = await this.loadMCPServersConfig();
 
-      // Only initialize MCP client if servers are configured
+      // Only create MCP client if servers are configured
       if (Object.keys(mcpServers).length > 0) {
         this.client = new MultiServerMCPClient({
           mcpServers,
         });
-        // MCP client initialized with configured servers
       } else {
-        // No MCP servers configured - client remains null
-        console.log("📋 No MCP servers configured - MCP functionality disabled");
+        // No servers configured - client remains null
+        this.client = null;
       }
     } catch (error) {
       console.error("❌ Failed to initialize MCP client:", error);
@@ -61,7 +60,7 @@ export class MCPClientManager {
 
       // Process each server from user's configuration
       for (const [serverName, serverConfig] of Object.entries(
-        config.servers || {}
+        config.mcpServers || config.servers || {}
       )) {
         const server = serverConfig as any;
 
@@ -90,19 +89,10 @@ export class MCPClientManager {
         }
       }
 
-      // No fallback servers - only use what's explicitly configured
-      if (Object.keys(mcpServers).length === 0) {
-        console.log("📋 No MCP servers configured - no MCP tools will be available");
-      }
-
+      // Return what was found, even if empty
       return mcpServers;
     } catch (error) {
-      console.log(
-        "⚠️  Could not load MCP configuration - no MCP tools will be available"
-      );
-      console.log(`   Config path: ${configPath}`);
-
-      // Return empty configuration - no fallback servers
+      // Silent error handling - just return empty config
       return {};
     }
   }
@@ -112,17 +102,15 @@ export class MCPClientManager {
    */
   async getTools() {
     if (!this.client) {
-      // Return empty array if no MCP client (no servers configured)
       return [];
     }
 
     try {
       const tools = await this.client.getTools();
-      // Tools loaded successfully - silent for clean UX
       return tools;
     } catch (error) {
-      console.error("❌ Failed to get MCP tools:", error);
-      throw error;
+      // Silent error handling - return empty array if tools can't be loaded
+      return [];
     }
   }
 

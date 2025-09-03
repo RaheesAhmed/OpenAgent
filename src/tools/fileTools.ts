@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2025 OpenAgent Team
+ * Licensed under the MIT License
+ */
+
 
 // File system operations, project management, and workspace tools
 
