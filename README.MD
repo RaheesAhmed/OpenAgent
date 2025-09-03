@@ -36,7 +36,6 @@
 ### 💬 [Usage Examples](#-usage-examples-1)
 ### 🏗️ [Project Structure](#️-project-structure)
 ### 🔧 [Built-in Capabilities](#-built-in-capabilities)
-   - [File Operations (via MCP)](#file-operations-via-mcp)
    - [Development Tools](#development-tools)
 ### 🤝 [Contributing](#-contributing)
    - [Development Setup](#development-setup)
@@ -273,12 +272,6 @@ src/
 ---
 
 ## 🔧 Built-in Capabilities
-
-### File Operations (via MCP)
-- **Read files** - View content with syntax highlighting
-- **Create/Edit files** - Generate or modify code files
-- **Search & Replace** - Pattern-based text editing
-- **Directory listing** - Browse project structure
 
 ### Development Tools
 - **Terminal integration** - Execute commands safely
