@@ -887,7 +887,7 @@ export class OpenAgent {
    */
   private displayCost(usage: { input_tokens: number; output_tokens: number }): void {
     const costs = this.tokenCounter.calculateCost('claude-3-5-sonnet-20241022', usage.input_tokens, usage.output_tokens);
-    console.log(chalk.cyan(`💰 Cost: $${costs.totalCost.toFixed(4)} (${usage.input_tokens} + ${usage.output_tokens} tokens)`));
+    console.log(chalk.cyan(`\n💰 Cost: ${costs.formattedCost} (${usage.input_tokens} + ${usage.output_tokens} tokens)`));
   }
 
   /**
