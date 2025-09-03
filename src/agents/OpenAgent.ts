@@ -517,8 +517,8 @@ export class OpenAgent {
         const { name } = payload;
         
         if (name === 'tools') {
-          // Show when tools are being executed
-          console.log(chalk.cyan('🔧 Using tools...'));
+          // Show when tools are being executed with proper spacing
+          
         }
       }
     } catch (error) {
@@ -546,11 +546,11 @@ export class OpenAgent {
       if (updateData.agent?.messages) {
         for (const message of updateData.agent.messages) {
           if (isAIMessageChunk(message)) {
-            // Handle tool calls - show clean, minimal info
+            // Handle tool calls - show clean, minimal info with proper formatting
             if (message.tool_calls && message.tool_calls.length > 0) {
               for (const toolCall of message.tool_calls) {
-                // Clean, single-line tool call notification
-                console.log(chalk.cyan(`🔧 ${toolCall.name}`));
+                // Clean, single-line tool call notification with spacing and dim formatting
+                console.log(`\n${chalk.dim('🔧')} ${chalk.cyan(toolCall.name)}`);
                 
                 toolUses.push({
                   id: toolCall.id,
@@ -575,8 +575,27 @@ export class OpenAgent {
         }
       }
       
-      // Tool results are now silent to reduce clutter
-      // Results will be shown in the main response
+      // Handle tool results with dim formatting to reduce visual clutter
+      if (updateData.tools?.messages) {
+        for (const toolMessage of updateData.tools.messages) {
+          if (toolMessage.content) {
+            // Show tool results in dim format with proper spacing
+            const toolName = toolMessage.name || 'tool';
+            console.log(chalk.dim(`\n📋 ${toolName} result:`));
+            
+            // Format the result content - truncate if too long
+            let resultContent = typeof toolMessage.content === 'string'
+              ? toolMessage.content
+              : JSON.stringify(toolMessage.content);
+            
+            if (resultContent.length > 200) {
+              resultContent = resultContent.substring(0, 200) + '...';
+            }
+            
+            console.log(chalk.dim(resultContent));
+          }
+        }
+      }
 
     } catch (error) {
       // Silent error handling to avoid cluttering output

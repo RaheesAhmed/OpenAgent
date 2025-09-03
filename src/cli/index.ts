@@ -92,7 +92,7 @@ async function startInteractiveChat(): Promise<void> {
           console.log();
           
           if (response.toolUses && response.toolUses.length > 0) {
-            console.log(chalk.hex(BRAND_COLORS.muted)(`(Used ${response.toolUses.length} tools)`));
+            console.log(chalk.dim(`\n(Used ${response.toolUses.length} tools)`));
           }
           
         } catch (error) {

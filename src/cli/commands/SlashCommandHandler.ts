@@ -309,7 +309,7 @@ export class SlashCommandHandler {
             const toolCalls = message.tool_calls || message.additional_kwargs?.tool_calls || [];
             
             if (toolCalls && toolCalls.length > 0) {
-              console.log(chalk.hex(BRAND_COLORS.muted)(`🔧 Found ${toolCalls.length} tool calls in message ${i}`));
+              console.log(chalk.dim(`\n🔧 Found ${toolCalls.length} tool calls in message ${i}`));
               
               for (const toolCall of toolCalls) {
                 const toolName = toolCall.name || toolCall.function?.name;
@@ -324,7 +324,7 @@ export class SlashCommandHandler {
                     parsedArgs = toolArgs;
                   }
                   
-                  console.log(chalk.hex(BRAND_COLORS.muted)(`🔍 Tool: ${toolName}, Args: ${JSON.stringify(parsedArgs).substring(0, 100)}...`));
+                  console.log(chalk.dim(`🔍 Tool: ${toolName}, Args: ${JSON.stringify(parsedArgs).substring(0, 100)}...`));
                   
                   const isFileOperation = toolName === 'write_file' ||
                                         toolName === 'create_file' ||
@@ -337,7 +337,7 @@ export class SlashCommandHandler {
                       path: parsedArgs.path,
                       args: parsedArgs
                     });
-                    console.log(chalk.hex(BRAND_COLORS.success)(`✅ Added file operation: ${toolName} -> ${parsedArgs.path}`));
+                    console.log(chalk.dim(`✅ Added file operation: ${toolName} -> ${parsedArgs.path}`));
                   }
                 }
               }
@@ -581,7 +581,7 @@ export class SlashCommandHandler {
                         
                         if (toolCall.args.content) {
                           const preview = toolCall.args.content.substring(0, 200);
-                          console.log(chalk.hex(BRAND_COLORS.muted)(`   Preview: ${preview}${toolCall.args.content.length > 200 ? '...' : ''}`));
+                          console.log(chalk.dim(`   Preview: ${preview}${toolCall.args.content.length > 200 ? '...' : ''}`));
                         }
                       }
                     }
@@ -883,7 +883,7 @@ export class SlashCommandHandler {
         
         // Show tool calls if present
         if (message.tool_calls && message.tool_calls.length > 0) {
-          console.log(chalk.hex(BRAND_COLORS.muted)(`   🔧 Tools: ${message.tool_calls.map((t: any) => t.name || 'unknown').join(', ')}`));
+          console.log(chalk.dim(`   🔧 Tools: ${message.tool_calls.map((t: any) => t.name || 'unknown').join(', ')}`));
         }
         
         console.log();
