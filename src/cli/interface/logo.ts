@@ -28,9 +28,6 @@ export const COMPACT_LOGO = `
  ╚═════╝ ╚═╝  ╚═╝
 `;
 
-/**
- * Brand colors and styling - Premium Gold & Fire Palette
- */
 export const BRAND_COLORS = {
   primary: '#FF6B35',     // Vibrant orange-red - main brand color
   secondary: '#F7931E',   // Golden orange - secondary accent
@@ -45,53 +42,8 @@ export const BRAND_COLORS = {
   glow: '#FFD700'         // Gold glow effect
 } as const;
 
-/**
- * Display the main OpenAgent logo with gradient effect
- */
-export function displayLogo(): void {
-  const gradient = chalk.hex(BRAND_COLORS.primary).bold;
-  const secondary = chalk.hex(BRAND_COLORS.secondary);
-  
-  console.log(gradient(OPENAGENT_LOGO));
-  console.log(secondary('Your Coding Companion'));
-}
-
-/**
- * Display compact logo for smaller contexts
- */
-export function displayCompactLogo(): void {
-  const gradient = chalk.hex(BRAND_COLORS.primary).bold;
-  console.log(gradient(COMPACT_LOGO));
-}
-
-/**
- * Brand tagline variations
- */
-export const TAGLINES = {
-  main: '🚀 The World\'s Most Advanced Open-Source AI Development Assistant',
-  short: '✨ AI-Powered Development Excellence',
-  technical: '🔬 Advanced AI • Perfect Memory • Zero Assumptions',
-  enterprise: '🏢 Enterprise-Grade AI Development Platform'
-} as const;
-
-/**
- * Version and build info display
- */
-export function displayVersion(version: string): void {
-  const versionColor = chalk.hex(BRAND_COLORS.accent).bold;
-  const labelColor = chalk.hex(BRAND_COLORS.muted);
-  
-  console.log(`${labelColor('Version:')} ${versionColor(version)}`);
-}
-
-/**
- * Loading spinner characters for animations
- */
 export const SPINNER_CHARS = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 
-/**
- * Status icons
- */
 export const STATUS_ICONS = {
   success: '✅',
   error: '❌',
@@ -105,9 +57,60 @@ export const STATUS_ICONS = {
   robot: '🤖'
 } as const;
 
-/**
- * Create a beautiful welcome message
- */
+export function displayLogo(): void {
+  const gradient = chalk.hex(BRAND_COLORS.primary).bold;
+  const secondary = chalk.hex(BRAND_COLORS.secondary);
+  const accent = chalk.hex(BRAND_COLORS.accent);
+  
+  console.log(gradient(OPENAGENT_LOGO));
+  console.log(chalk.hex(BRAND_COLORS.muted)('  ') + secondary('Your AI Development Companion'));
+  console.log(chalk.hex(BRAND_COLORS.muted)('  ') + accent('v1.0.0') + chalk.hex(BRAND_COLORS.muted)(' • Open Source • Advanced AI'));
+}
+
+export function displayCompactLogo(): void {
+  const gradient = chalk.hex(BRAND_COLORS.primary).bold;
+  const secondary = chalk.hex(BRAND_COLORS.secondary);
+  console.log(gradient(COMPACT_LOGO));
+  console.log(secondary('  OpenAgent'));
+}
+
+export const TAGLINES = {
+  main: STATUS_ICONS.rocket + ' The World\'s Most Advanced Open-Source AI Development Assistant',
+  short: STATUS_ICONS.sparkles + ' AI-Powered Development Excellence',
+  technical: STATUS_ICONS.brain + ' Advanced AI • Perfect Memory • Zero Assumptions',
+  enterprise: STATUS_ICONS.gear + ' Enterprise-Grade AI Development Platform',
+  welcome: STATUS_ICONS.sparkles + ' Welcome to the future of AI-assisted development'
+} as const;
+
+export function displayVersion(version: string): void {
+  const versionColor = chalk.hex(BRAND_COLORS.accent).bold;
+  const labelColor = chalk.hex(BRAND_COLORS.muted);
+  
+  console.log(`${labelColor('Version:')} ${versionColor(version)}`);
+  console.log(`${labelColor('Build:')} ${chalk.hex(BRAND_COLORS.secondary)(new Date().toISOString().split('T')[0])}`);
+}
+
+export function displayStartupBanner(): void {
+  const primary = chalk.hex(BRAND_COLORS.primary);
+  const accent = chalk.hex(BRAND_COLORS.accent);
+  const muted = chalk.hex(BRAND_COLORS.muted);
+  
+  console.log(primary('━'.repeat(80)));
+  console.log(accent.bold('  OpenAgent is initializing your development environment...'));
+  console.log(muted('  Please wait while we prepare everything for you.'));
+  console.log(primary('━'.repeat(80)));
+}
+
+export function displayReadyBanner(): void {
+  const success = chalk.hex(BRAND_COLORS.success);
+  const muted = chalk.hex(BRAND_COLORS.muted);
+  
+  console.log('\n' + success('━'.repeat(80)));
+  console.log(success.bold(`  ${STATUS_ICONS.success} OpenAgent is ready and at your service!`));
+  console.log(muted('  Start by asking a question or typing /help for available commands.'));
+  console.log(success('━'.repeat(80)));
+}
+
 export function createWelcomeMessage(): string {
   const primary = chalk.hex(BRAND_COLORS.primary).bold;
   const muted = chalk.hex(BRAND_COLORS.muted);

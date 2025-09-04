@@ -709,63 +709,45 @@ export class SlashCommandHandler {
     console.log();
   }
 
-  /**
-   * Show all available commands in a clean table format
-   */
   private showAllCommands(): void {
     const primary = chalk.hex(BRAND_COLORS.primary).bold;
     const secondary = chalk.hex(BRAND_COLORS.secondary);
     const text = chalk.hex(BRAND_COLORS.text);
     const muted = chalk.hex(BRAND_COLORS.muted);
-    const success = chalk.hex(BRAND_COLORS.success);
+    const accent = chalk.hex(BRAND_COLORS.accent);
 
-    console.log(`\n${primary('📋 Available Slash Commands')}\n`);
+    console.log(`\n${primary('🚀 OpenAgent Commands')}`);
+    console.log(chalk.hex(BRAND_COLORS.muted)('━'.repeat(60)));
 
     const commands = this.getCommands().sort((a, b) => a.name.localeCompare(b.name));
     
-    // Fixed column widths for better terminal compatibility
-    const commandWidth = 20;
-    const descWidth = 35;
-    const usageWidth = 25;
+    const categories = {
+      'Essential': ['help', 'status', 'exit'],
+      'Memory & History': ['history', 'reset', 'new'],
+      'File Operations': ['files', 'diff', 'revert', 'undo'],
+      'Project Management': ['checkpoint', 'save', 'load', 'rollback'],
+      'Performance': ['metrics', 'config', 'version']
+    };
 
-    // Simple border using dashes and pipes
-    const border = muted('─'.repeat(commandWidth + descWidth + usageWidth + 8));
-    
-    console.log(border);
-    
-    // Header row
-    const commandHeader = success('COMMAND'.padEnd(commandWidth));
-    const descHeader = success('DESCRIPTION'.padEnd(descWidth));
-    const usageHeader = success('USAGE'.padEnd(usageWidth));
-    
-    console.log(`${muted('│')} ${commandHeader} ${muted('│')} ${descHeader} ${muted('│')} ${usageHeader} ${muted('│')}`);
-    console.log(border);
-    
-    // Command rows
-    commands.forEach((command) => {
-      const aliases = command.aliases ? ` (${command.aliases.map(a => `/${a}`).join(', ')})` : '';
-      const commandName = `/${command.name}${aliases}`;
-      
-      // Truncate if too long and add ellipsis
-      const displayCommand = commandName.length > commandWidth ?
-        commandName.substring(0, commandWidth - 3) + '...' :
-        commandName.padEnd(commandWidth);
-        
-      const displayDesc = command.description.length > descWidth ?
-        command.description.substring(0, descWidth - 3) + '...' :
-        command.description.padEnd(descWidth);
-        
-      const displayUsage = command.usage.length > usageWidth ?
-        command.usage.substring(0, usageWidth - 3) + '...' :
-        command.usage.padEnd(usageWidth);
-      
-      console.log(`${muted('│')} ${primary(displayCommand)} ${muted('│')} ${text(displayDesc)} ${muted('│')} ${secondary(displayUsage)} ${muted('│')}`);
-    });
-    
-    console.log(border);
-    console.log();
-    console.log(text('💡 Type ') + primary('/help <command>') + text(' for detailed help'));
-    console.log(text('🚀 Example: ') + primary('/help status') + text(' or ') + primary('/help reset'));
+    for (const [category, commandNames] of Object.entries(categories)) {
+      const categoryCommands = commands.filter(cmd => commandNames.includes(cmd.name));
+      if (categoryCommands.length === 0) continue;
+
+      console.log(`\n${accent(`📂 ${category}`)}`);
+      console.log(muted('─'.repeat(40)));
+
+      categoryCommands.forEach((command) => {
+        const aliases = command.aliases ? muted(` (${command.aliases.map(a => `/${a}`).join(', ')})`) : '';
+        console.log(`${primary(`/${command.name}`)}${aliases}`);
+        console.log(`   ${text(command.description)}`);
+        console.log(`   ${secondary(command.usage)}`);
+        console.log();
+      });
+    }
+
+    console.log(chalk.hex(BRAND_COLORS.muted)('━'.repeat(60)));
+    console.log(`${text('💡 Type')} ${primary('/help <command>')} ${text('for detailed information')}`);
+    console.log(`${text('🎯 Example:')} ${primary('/help status')} ${text('or')} ${primary('/status')}`);
     console.log();
   }
 

@@ -1,40 +1,29 @@
-/**
- * Copyright (c) 2025 OpenAgent Team
- * Licensed under the MIT License
- */
-
-/**
- * Modern CLI Interface Components
- */
-
-/**
- * Loading spinner with customizable message
- */
-
 import chalk from "chalk";
 import inquirer from "inquirer";
 import { BRAND_COLORS, STATUS_ICONS, SPINNER_CHARS } from "./logo.js";
-
 
 export class LoadingSpinner {
   private interval: NodeJS.Timeout | null = null;
   private spinnerIndex = 0;
   private message: string;
+  private startTime = Date.now();
 
   constructor(message: string = "Loading...") {
     this.message = message;
   }
 
   start(): void {
-    process.stdout.write("\x1B[?25l"); // Hide cursor
+    process.stdout.write("\x1B[?25l");
+    this.startTime = Date.now();
 
     this.interval = setInterval(() => {
-      const spinner = chalk.hex(BRAND_COLORS.primary)(
-        SPINNER_CHARS[this.spinnerIndex]
-      );
+      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const timeStr = elapsed > 0 ? chalk.hex(BRAND_COLORS.muted)(` [${elapsed}s]`) : "";
+      
+      const spinner = chalk.hex(BRAND_COLORS.primary)(SPINNER_CHARS[this.spinnerIndex]);
       const text = chalk.hex(BRAND_COLORS.text)(this.message);
 
-      process.stdout.write(`\r${spinner} ${text}`);
+      process.stdout.write(`\r${spinner} ${text}${timeStr}`);
       this.spinnerIndex = (this.spinnerIndex + 1) % SPINNER_CHARS.length;
     }, 100);
   }
@@ -45,11 +34,13 @@ export class LoadingSpinner {
       this.interval = null;
     }
 
-    process.stdout.write("\r\x1B[K"); // Clear line
-    process.stdout.write("\x1B[?25h"); // Show cursor
+    process.stdout.write("\r\x1B[K");
+    process.stdout.write("\x1B[?25h");
 
     if (finalMessage) {
-      console.log(finalMessage);
+      const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      const timeStr = elapsed > 0 ? chalk.hex(BRAND_COLORS.muted)(` [${elapsed}s]`) : "";
+      console.log(chalk.hex(BRAND_COLORS.success)(`${STATUS_ICONS.success} ${finalMessage}${timeStr}`));
     }
   }
 

@@ -1,123 +1,125 @@
-/**
- * Copyright (c) 2025 OpenAgent Team
- * Licensed under the MIT License
- */
-
 import chalk from "chalk";
+import { BRAND_COLORS, STATUS_ICONS } from "./logo.js";
 
-/**
- * Professional streaming handler with spinner and status updates
- */
 export class StreamingHandler {
   private frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  private gradientFrames = ["●", "◐", "◑", "◒", "◓", "◔", "◕", "◖", "◗", "○"];
   private interval: NodeJS.Timeout | null = null;
   private frameIndex = 0;
   private currentStatus = "";
   private isActive = false;
   private isStopped = false;
   private startTime = Date.now();
+  private useGradient = false;
 
-  /**
-   * Start the streaming handler with initial status
-   */
-  start(status: string = "Processing"): void {
+  start(status: string = "Processing", useGradient: boolean = false): void {
     if (this.isActive) return;
 
     this.currentStatus = status;
     this.isActive = true;
-    this.isStopped = false; // Reset stopped flag for new session
+    this.isStopped = false;
     this.startTime = Date.now();
+    this.useGradient = useGradient;
 
     this.interval = setInterval(() => {
       if (this.isActive && this.interval && !this.isStopped) {
         const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-        const timeStr = elapsed > 0 ? chalk.dim(` (${elapsed}s)`) : "";
-        process.stdout.write(
-          `\r${chalk.cyan(this.frames[this.frameIndex])} ${chalk.dim(
-            this.currentStatus
-          )}${timeStr}...`
-        );
-        this.frameIndex = (this.frameIndex + 1) % this.frames.length;
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        
+        let timeStr = "";
+        if (elapsed > 0) {
+          if (minutes > 0) {
+            timeStr = chalk.hex(BRAND_COLORS.muted)(` [${minutes}:${seconds.toString().padStart(2, '0')}]`);
+          } else {
+            timeStr = chalk.hex(BRAND_COLORS.muted)(` [${seconds}s]`);
+          }
+        }
+
+        const frames = this.useGradient ? this.gradientFrames : this.frames;
+        const spinner = chalk.hex(BRAND_COLORS.primary)(frames[this.frameIndex]);
+        const statusText = chalk.hex(BRAND_COLORS.text)(this.currentStatus);
+        
+        process.stdout.write(`\r${spinner} ${statusText}${timeStr}`);
+        this.frameIndex = (this.frameIndex + 1) % frames.length;
       }
-    }, 80);
+    }, this.useGradient ? 120 : 80);
   }
 
-  /**
-   * Update the status message
-   */
   updateStatus(status: string): void {
     this.currentStatus = status;
   }
 
-  /**
-   * Show a brief status update without changing the main status
-   */
-  showUpdate(
-    message: string,
-    type: "info" | "success" | "warning" = "info"
-  ): void {
+  showUpdate(message: string, type: "info" | "success" | "warning" = "info"): void {
     if (!this.isActive) return;
 
     this.clearLine();
 
-    const colors = {
-      info: chalk.blue,
-      success: chalk.green,
-      warning: chalk.yellow,
+    const icons = {
+      info: STATUS_ICONS.info,
+      success: STATUS_ICONS.success,
+      warning: STATUS_ICONS.warning,
     };
 
-    console.log(colors[type](`→ ${message}`));
-    // Don't restart the spinner, it will continue on next interval
+    const colors = {
+      info: BRAND_COLORS.primary,
+      success: BRAND_COLORS.success,
+      warning: BRAND_COLORS.warning,
+    };
+
+    console.log(chalk.hex(colors[type])(`${icons[type]} ${message}`));
   }
 
-  /**
-   * Stop the streaming handler and clear the line
-   */
+  showProgress(message: string): void {
+    if (!this.isActive) return;
+    
+    this.clearLine();
+    console.log(chalk.hex(BRAND_COLORS.accent)(`${STATUS_ICONS.gear} ${message}`));
+  }
+
   stop(): void {
-    this.isStopped = true; // Immediately prevent any new writes
+    this.isStopped = true;
     this.isActive = false;
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
     }
     this.clearLine();
-    // Ensure line is fully cleared after interval stops
+    
     setTimeout(() => {
       if (this.isStopped) {
-        // Only clear if still stopped
         this.clearLine();
       }
     }, 100);
   }
 
-  /**
-   * Show final completion message
-   */
   complete(message: string = "Complete"): void {
     this.stop();
     const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
-    const timeStr = elapsed > 0 ? chalk.dim(` (${elapsed}s)`) : "";
-    console.log(chalk.green(`✓ ${message}${timeStr}`));
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    
+    let timeStr = "";
+    if (elapsed > 0) {
+      if (minutes > 0) {
+        timeStr = chalk.hex(BRAND_COLORS.muted)(` [${minutes}:${seconds.toString().padStart(2, '0')}]`);
+      } else {
+        timeStr = chalk.hex(BRAND_COLORS.muted)(` [${seconds}s]`);
+      }
+    }
+
+    console.log(chalk.hex(BRAND_COLORS.success)(`${STATUS_ICONS.success} ${message}${timeStr}`));
   }
 
-  /**
-   * Show error message and stop
-   */
   error(message: string): void {
     this.stop();
-    console.log(chalk.red(`✗ ${message}`));
+    console.log(chalk.hex(BRAND_COLORS.error)(`${STATUS_ICONS.error} ${message}`));
   }
 
-  /**
-   * Clear the current line
-   */
   private clearLine(): void {
-    process.stdout.write("\r\x1B[K"); // Move to start of line and clear to end
+    process.stdout.write("\r\x1B[K");
   }
 
-  /**
-   * Check if handler is currently active
-   */
   isRunning(): boolean {
     return this.isActive;
   }
