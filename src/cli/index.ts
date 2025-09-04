@@ -95,26 +95,30 @@ async function startInteractiveChat(): Promise<void> {
           console.error(chalk.hex(BRAND_COLORS.error)(`${STATUS_ICONS.error} Command error: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
       } else {
+        // Show loading animation while agent processes, then let agent handle streaming
         const streamingHandler = new StreamingHandler();
         globalStreamingHandler = streamingHandler;
         
         try {
-          streamingHandler.start('Processing your request', true);
+          // Start subtle loading animation - agent will stop it when content starts
+          streamingHandler.start('🤖 OpenAgent is thinking', true);
           
           const response = await agentManager.processMessage(message);
           
+          // Ensure spinner is stopped without clearing (let agent content flow)
           if (streamingHandler.isRunning()) {
-            streamingHandler.complete('Task completed successfully');
+            streamingHandler.stop(); // No clearing - agent content writes over spinner
           }
           
-          console.log();
-          
-          if (response.toolUses && response.toolUses.length > 0) {
-            console.log(chalk.hex(BRAND_COLORS.success)(`${STATUS_ICONS.gear} Executed ${response.toolUses.length} operation${response.toolUses.length > 1 ? 's' : ''} successfully`));
+          // Agent handles all output - we just ensure success
+          if (!response.success) {
+            console.error(chalk.hex(BRAND_COLORS.error)(`${STATUS_ICONS.error} ${response.content}`));
           }
           
         } catch (error) {
-          streamingHandler.error(`Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          // For errors, clear the line and show error
+          streamingHandler.stopAndClear();
+          console.error(chalk.hex(BRAND_COLORS.error)(`${STATUS_ICONS.error} Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
         } finally {
           globalStreamingHandler = null;
         }

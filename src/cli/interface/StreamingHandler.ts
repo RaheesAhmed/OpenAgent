@@ -3,7 +3,7 @@ import { BRAND_COLORS, STATUS_ICONS } from "./logo.js";
 
 export class StreamingHandler {
   private frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-  private gradientFrames = ["●", "◐", "◑", "◒", "◓", "◔", "◕", "◖", "◗", "○"];
+  // private gradientFrames = ["●", "◐", "◑", "◒", "◓", "◔", "◕", "◖", "◗", "○"];
   private interval: NodeJS.Timeout | null = null;
   private frameIndex = 0;
   private currentStatus = "";
@@ -36,7 +36,7 @@ export class StreamingHandler {
           }
         }
 
-        const frames = this.useGradient ? this.gradientFrames : this.frames;
+        const frames = this.useGradient ? this.frames : this.frames;
         const spinner = chalk.hex(BRAND_COLORS.primary)(frames[this.frameIndex]);
         const statusText = chalk.hex(BRAND_COLORS.text)(this.currentStatus);
         
@@ -84,13 +84,16 @@ export class StreamingHandler {
       clearInterval(this.interval);
       this.interval = null;
     }
-    this.clearLine();
     
-    setTimeout(() => {
-      if (this.isStopped) {
-        this.clearLine();
-      }
-    }, 100);
+    // Don't clear line when stopped by agent - let agent content write over spinner
+    // Only clear if we're being stopped manually (not by agent streaming)
+  }
+  
+  // New method for manual stopping (non-agent) - ensures clean line break
+  stopAndClear(): void {
+    this.stop();
+    this.clearLine();
+    process.stdout.write('\n'); // Add newline so agent content starts on fresh line
   }
 
   complete(message: string = "Complete"): void {

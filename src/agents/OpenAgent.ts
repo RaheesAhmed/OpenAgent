@@ -265,9 +265,7 @@ export class OpenAgent {
         console.error('❌ Context update failed:', contextError);
         throw contextError;
       }
-      // Context updated successfully - silent for clean UX
-
-      // Create simple, clean messages for LangGraph (NO OPTIMIZATION TO PREVENT CORRUPTION)
+      
       const messages = [
         { role: "user", content: message }
       ];
@@ -434,28 +432,26 @@ export class OpenAgent {
     let hasStartedStreaming = false;
     let spinnerStopped = false;
     
+    // Get spinner handler once
+    const { globalStreamingHandler } = await import('../cli/index.js').catch(() => ({ globalStreamingHandler: null }));
+    
+    // Function to clear spinner immediately when content detected
+    const clearSpinner = () => {
+      if (!spinnerStopped && globalStreamingHandler && globalStreamingHandler.isRunning()) {
+        globalStreamingHandler.stopAndClear();
+        spinnerStopped = true;
+        hasStartedStreaming = true;
+      }
+    };
 
     try {
-      const { globalStreamingHandler } = await import('../cli/index.js').catch(() => ({ globalStreamingHandler: null }));
-
       // Process enhanced streaming with updates and debug info
       for await (const [streamType, streamData] of stream) {
         if (streamType === 'updates') {
           // Handle update events for tool calls and content
-          const result = await this.handleUpdateEvent(streamData);
+          const result = await this.handleUpdateEvent(streamData, clearSpinner);
           
-          if (result.content) {
-            // Stop spinner only when actual content starts streaming
-            if (!spinnerStopped && globalStreamingHandler) {
-              globalStreamingHandler.stop();
-              spinnerStopped = true;
-            }
-            
-            fullContent += result.content;
-            if (!hasStartedStreaming) {
-              hasStartedStreaming = true;
-            }
-          }
+          fullContent += result.content;
           
           if (result.toolUses.length > 0) {
             toolUses.push(...result.toolUses);
@@ -469,17 +465,11 @@ export class OpenAgent {
           // Handle debug events for step visibility
           this.handleDebugEvent(streamData);
         } else if (streamType === 'messages') {
-          // Stop spinner when actual message content starts streaming
-          if (!spinnerStopped && globalStreamingHandler) {
-            globalStreamingHandler.stop();
-            spinnerStopped = true;
-          }
+          // Clear spinner immediately when messages detected
+          clearSpinner();
           
           // Handle message streaming (actual LLM response content)
           this.handleMessageStream(streamData);
-          if (!hasStartedStreaming) {
-            hasStartedStreaming = true;
-          }
         }
       }
 
@@ -495,13 +485,8 @@ export class OpenAgent {
     } catch (error) {
       console.error(chalk.red('Error handling enhanced LangGraph stream:'), error);
       // Make sure spinner is stopped even on error
-      try {
-        const { globalStreamingHandler } = await import('../cli/index.js').catch(() => ({ globalStreamingHandler: null }));
-        if (globalStreamingHandler) {
-          globalStreamingHandler.stop();
-        }
-      } catch (importError) {
-        // Ignore import errors in error handling
+      if (globalStreamingHandler) {
+        globalStreamingHandler.stop();
       }
     }
 
@@ -532,7 +517,7 @@ export class OpenAgent {
    */
   private async handleUpdateEvent(
     updateData: any,
-    
+    clearSpinner: () => void
   ): Promise<{
     content: string;
     toolUses: any[];
@@ -547,6 +532,12 @@ export class OpenAgent {
       if (updateData.agent?.messages) {
         for (const message of updateData.agent.messages) {
           if (isAIMessageChunk(message)) {
+            // Clear spinner IMMEDIATELY when any content is detected
+            if ((message.tool_calls && message.tool_calls.length > 0) || 
+                (message.content && typeof message.content === 'string')) {
+              clearSpinner();
+            }
+            
             // Handle tool calls - show clean, minimal info with proper formatting
             if (message.tool_calls && message.tool_calls.length > 0) {
               for (const toolCall of message.tool_calls) {
@@ -578,6 +569,9 @@ export class OpenAgent {
       
       // Handle tool results with dim formatting to reduce visual clutter
       if (updateData.tools?.messages) {
+        // Clear spinner when tool results come in too
+        clearSpinner();
+        
         for (const toolMessage of updateData.tools.messages) {
           if (toolMessage.content) {
             // Show tool results in dim format with proper spacing
