@@ -9,6 +9,7 @@
 import fs from "fs-extra";
 import path from "path";
 import chalk from "chalk";
+import { OpenAgentContext } from "../context/OpenAgentContext.js";
 
 export class ProjectSetup {
   private openagentDir: string;
@@ -30,6 +31,7 @@ export class ProjectSetup {
       await this.createOpenAgentDirectory();
       await this.createMcpServersConfig();
       await this.createRulesFile();
+      await this.generateOpenAgentMD();
       await this.updateGitignore();
 
       // Show success message only if this was the first time setup
@@ -109,6 +111,44 @@ Edit the mcp-servers.json file to add MCP servers for additional tools and capab
 `;
 
       await fs.writeFile(rulesPath, defaultRules, "utf8");
+    }
+  }
+
+  /**
+   * Generate OPENAGENT.MD file automatically during setup
+   */
+  private async generateOpenAgentMD(): Promise<void> {
+    const openagentMdPath = path.join(this.projectPath, "OPENAGENT.MD");
+
+    // Only create if it doesn't exist
+    if (!(await fs.pathExists(openagentMdPath))) {
+      try {
+        console.log(chalk.dim("Generating OPENAGENT.MD file..."));
+        
+        const contextManager = new OpenAgentContext(this.projectPath);
+        await contextManager.generateInitialContext(openagentMdPath);
+        
+        console.log(chalk.green("✅ Generated OPENAGENT.MD with project analysis"));
+      } catch (error) {
+        console.warn(chalk.yellow("Warning: Failed to generate OPENAGENT.MD:"), error);
+        
+        // Create a basic fallback file
+        const fallbackContent = `# OPENAGENT.MD
+*OpenAgent Project Context*
+
+## Project Overview
+Project: ${path.basename(this.projectPath)}
+
+## Rules
+- Follow project conventions
+- Write clean, maintainable code
+- Add appropriate documentation
+
+## Instructions
+Add your project-specific instructions here.
+`;
+        await fs.writeFile(openagentMdPath, fallbackContent, "utf8");
+      }
     }
   }
 

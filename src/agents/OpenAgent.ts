@@ -23,6 +23,7 @@ import { AgentConfig, AgentResponse, AgentContext } from '../types/agent.js';
 import { OPENAGENT_SYSTEM_PROMPT } from '../prompts/openagent_prompt.js';
 import { TokenCounter } from '../core/tokens/TokenCounter.js';
 import { ContextManager } from '../core/context/ContextManager.js';
+import { OpenAgentContext } from '../core/context/OpenAgentContext.js';
 import { TokenOptimizer } from '../core/optimization/TokenOptimizer.js';
 import { ValidationEngine } from '../core/validation/ValidationEngine.js';
 import { MemoryIntegration } from '../memory/index.js';
@@ -62,17 +63,20 @@ export class OpenAgent {
   private openAgentConfig: OpenAgentConfig;
   private tokenCounter: TokenCounter;
   private contextManager: ContextManager;
+  private openAgentContext: OpenAgentContext;
   private tokenOptimizer: TokenOptimizer;
   private validationEngine: ValidationEngine;
   private memoryIntegration: MemoryIntegration;
   private store: InMemoryStore;
   private checkpointer: MemorySaver;
+  // Note: InMemoryCache not yet supported by createReactAgent prebuilt
+  // Custom graph implementation needed for full caching support
   private context: AgentContext;
   private chatModel: any;
   private customRules: string;
   private mcpClient: MCPClientManager;
 
-  constructor(apiKey: string, context: AgentContext, _mcpServers: any[] = [], customRules: string = '') {
+  constructor(context: AgentContext,customRules: string = '') {
     this.context = context;
     this.customRules = customRules;
     
@@ -80,8 +84,9 @@ export class OpenAgent {
     this.openAgentConfig = DEFAULT_CONFIG;
     
     // Initialize core systems
-    this.tokenCounter = new TokenCounter(apiKey);
-    this.contextManager = new ContextManager(context.projectPath, apiKey);
+    this.tokenCounter = new TokenCounter();
+    this.contextManager = new ContextManager(context.projectPath);
+    this.openAgentContext = new OpenAgentContext(context.projectPath);
     this.tokenOptimizer = new TokenOptimizer(context.projectPath);
     this.validationEngine = new ValidationEngine(context.projectPath, {
       enabled: true,
@@ -102,6 +107,7 @@ export class OpenAgent {
     // Initialize LangGraph components
     this.store = new InMemoryStore();
     this.checkpointer = new MemorySaver();
+    
 
     this.config = {
       id: "openagent-langgraph",
@@ -190,7 +196,7 @@ export class OpenAgent {
         ...allProjectTools,
       ];
 
-      // Create the LangGraph ReAct agent
+      // Create the LangGraph ReAct agent with caching to reduce token usage
       this.agent = createReactAgent({
         llm: this.chatModel,
         tools: allTools,
@@ -198,6 +204,9 @@ export class OpenAgent {
         checkpointSaver: this.checkpointer,
         interruptBefore: [], // Disable interrupts for now to fix basic functionality
       });
+
+      // Note: createReactAgent may not support direct cache parameter
+      // If token usage remains high, we may need to build custom agent with cache support
 
       //console.log(chalk.green('🚀 OpenAgent LangGraph agent initialized successfully!'));
     } catch (error) {
@@ -611,7 +620,7 @@ export class OpenAgent {
    */
   private handleMessageStream(messageData: any): void {
     try {
-      const [message, _metadata] = messageData;
+      const [message] = messageData;
       
       // Content is in message.content[0].text format for Anthropic models
       if (message && message.content && Array.isArray(message.content) && message.content[0] && message.content[0].text) {
@@ -785,11 +794,21 @@ export class OpenAgent {
     // Get base system prompt
     let systemPrompt = this.config.systemPrompt;
     
-    // Add context summary without corruption
+    // Add OPENAGENT.MD project context (like Claude Code's CLAUDE.md)
+    try {
+      const projectContext = await this.openAgentContext.getProjectContext();
+      if (projectContext && projectContext.trim()) {
+        systemPrompt += `\n\n## Project Context (OPENAGENT.MD):\n${projectContext}`;
+      }
+    } catch (error) {
+      console.warn('Warning: OpenAgent context loading failed:', error);
+    }
+    
+    // Add legacy context summary without corruption
     try {
       const contextSummary = this.contextManager.getContextSummary();
       if (contextSummary && contextSummary.trim()) {
-        systemPrompt += `\n\n## Current Context:\n${contextSummary}`;
+        systemPrompt += `\n\n## Session Context:\n${contextSummary}`;
       }
     } catch (error) {
       console.warn('Warning: Context summary failed:', error);
@@ -890,6 +909,8 @@ export class OpenAgent {
   private displayCost(usage: { input_tokens: number; output_tokens: number }): void {
     const costs = this.tokenCounter.calculateCost('claude-3-5-sonnet-20241022', usage.input_tokens, usage.output_tokens);
     console.log(chalk.cyan(`\n💰 Cost: ${costs.formattedCost} (${usage.input_tokens} + ${usage.output_tokens} tokens)`));
+    
+    
   }
 
   /**

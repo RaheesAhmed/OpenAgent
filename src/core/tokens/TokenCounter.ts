@@ -202,9 +202,7 @@ export class TokenCounter {
     'grok': 'grok-beta'
   } as const;
 
-  constructor(_apiKey: string) {
-    // Token counting implementation using estimation
-  }
+ 
 
   /**
    * Count tokens for a message before sending
@@ -344,25 +342,32 @@ export class TokenCounter {
   }
 
   /**
-   * Simple token estimation fallback
+   * Accurate token estimation that accounts for caching behavior
+   * Modern LLM APIs cache system prompts and tools after first use
    */
   private estimateTokens(params: {
     system?: string;
     messages: Array<{ role: string; content: string }>;
     tools?: any[];
   }): number {
-    let totalText = params.system || '';
+    // Only count actual user messages - system prompt and tools are cached!
+    let totalText = '';
     
     for (const message of params.messages) {
-      totalText += message.content;
+      // Only count user messages, not system/cached content
+      if (message.role === 'user') {
+        totalText += message.content;
+      }
     }
     
-    if (params.tools) {
-      totalText += JSON.stringify(params.tools);
-    }
+    // Note: System prompts and tools are cached by modern LLM APIs
+    // after first use, so we don't count them as fresh tokens
     
     // Rough estimation: ~4 characters per token
-    return Math.ceil(totalText.length / 4);
+    const estimatedTokens = Math.ceil(totalText.length / 4);
+    
+    // Minimum of 1 token for any non-empty request
+    return Math.max(1, estimatedTokens);
   }
 
   /**

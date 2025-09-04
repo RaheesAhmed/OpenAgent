@@ -42,21 +42,37 @@ export {
   type RelatedFilesResult
 } from './projectTools.js';
 
+// OpenAgent context tools
+export {
+  initContextTool,
+  addContextInstructionTool,
+  getProjectContextTool,
+  getPathContextTool,
+  updateContextFileTool,
+  allContextTools,
+  type OpenAgentContextParams,
+  type ContextResult,
+  type ContextError
+} from './openAgentContextTool.js';
+
 // Terminal/execution tools
 export * from './terminal.js';
 
 // Combined tool arrays for easy registration
 import { allFileTools } from './fileTools.js';
 import { allProjectTools } from './projectTools.js';
+import { allContextTools } from './openAgentContextTool.js';
 
 export const allTools = [
   ...allFileTools,
-  ...allProjectTools
+  ...allProjectTools,
+  ...allContextTools
 ];
 
 // Tool categories for organization
 export const toolCategories = {
   filesystem: allFileTools,
   project: allProjectTools,
+  context: allContextTools,
   all: allTools
 };

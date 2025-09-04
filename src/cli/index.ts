@@ -224,7 +224,7 @@ async function main(): Promise<void> {
     
     console.log(chalk.hex(BRAND_COLORS.primary)(`${STATUS_ICONS.gear} Initializing OpenAgent...`));
     
-    await agentManager.initialize(apiKey, process.cwd());
+    await agentManager.initialize(process.cwd());
     slashCommandHandler = new SlashCommandHandler(agentManager);
     
     console.log(chalk.hex(BRAND_COLORS.success)(`${STATUS_ICONS.success} OpenAgent initialized successfully!`));

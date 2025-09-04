@@ -29,7 +29,7 @@ export class OpenAgentManager {
   /**
    * Initialize the LangGraph-based OpenAgent agent
    */
-  public async initialize(apiKey: string, projectPath: string): Promise<void> {
+  public async initialize( projectPath: string): Promise<void> {
     try {
      
 
@@ -37,20 +37,14 @@ export class OpenAgentManager {
       const projectSetup = new ProjectSetup(projectPath);
       await projectSetup.initialize();
 
-      // Load MCP servers and custom rules
-      const mcpServers = await projectSetup.loadMcpServers();
+      
       const customRules = await projectSetup.loadCustomRules();
 
       // Build comprehensive agent context
       this.context = await this.buildAgentContext(projectPath);
 
       // Create LangGraph-based OpenAgent agent
-      this.agent = new OpenAgent(
-        apiKey,
-        this.context,
-        mcpServers,
-        customRules
-      );
+      this.agent = new OpenAgent( this.context, customRules);
 
       // Initialize the LangGraph agent with all systems
       await this.agent.initialize();

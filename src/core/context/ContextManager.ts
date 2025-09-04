@@ -2,9 +2,9 @@
  * Copyright (c) 2025 OpenAgent Team
  * Licensed under the MIT License
 
- * Advanced Context Manager for OpenClaude
+ * Advanced Context Manager for OpenAgent
  * Implements context persistence, versioning, and intelligent recovery
- * Addresses Claude Code weaknesses: context leak, repeated questions, state confusion
+ * Addresses Agent Code weaknesses: context leak, repeated questions, state confusion
  */
 
 import fs from 'fs-extra';
@@ -168,7 +168,7 @@ export class ContextManager extends EventEmitter {
     qualityThreshold: 0.7,
   };
 
-  constructor(projectPath: string, _apiKey: string) {
+  constructor(projectPath: string) {
     super();
     this.projectPath = projectPath;
     this.contextPath = path.join(projectPath, '.openagent', 'context');
@@ -852,52 +852,37 @@ export class ContextManager extends EventEmitter {
   }
 
   /**
-   * Get context summary for AI agent
+   * Get optimized context summary for AI agent (token-efficient)
    */
   getContextSummary(): string {
     if (!this.currentState) return '';
 
-    const messages = this.currentState.conversation.messages;
-    const recentMessages = messages.slice(-5);
+    let summary = '';
     
-    let summary = '## Current Context Summary:\n\n';
-    
-    // Current task
-    if (this.currentState.user.currentTask) {
-      summary += `**Current Task:** ${this.currentState.user.currentTask}\n\n`;
+    // Only add essential context - current task if exists
+    if (this.currentState.user.currentTask && this.currentState.user.currentTask.trim()) {
+      summary += `Task: ${this.currentState.user.currentTask}`;
     }
     
-    // Recent conversation
-    if (recentMessages.length > 0) {
-      summary += '**Recent Conversation:**\n';
-      for (const msg of recentMessages) {
-        const role = msg.role.charAt(0).toUpperCase() + msg.role.slice(1);
-        const content = msg.content.length > 200 ? 
-          msg.content.substring(0, 200) + '...' : 
-          msg.content;
-        summary += `- **${role}:** ${content}\n`;
-      }
-      summary += '\n';
-    }
-    
-    // Active files
+    // Only add active files if there are any (most important for development)
     if (this.currentState.project.activeFiles.length > 0) {
-      summary += `**Active Files:** ${this.currentState.project.activeFiles.join(', ')}\n\n`;
+      const files = this.currentState.project.activeFiles.slice(0, 3); // Limit to 3 files
+      if (summary) summary += ' | ';
+      summary += `Active: ${files.join(', ')}`;
+      if (this.currentState.project.activeFiles.length > 3) {
+        summary += ` +${this.currentState.project.activeFiles.length - 3} more`;
+      }
     }
     
-    // Recent tools
-    const recentTools = this.currentState.ai.toolsUsed.slice(-5);
-    if (recentTools.length > 0) {
-      summary += `**Recent Tools Used:** ${recentTools.join(', ')}\n\n`;
+    // Add modified files if any (important for context)
+    if (this.currentState.project.modifiedFiles.length > 0) {
+      const modified = this.currentState.project.modifiedFiles.slice(0, 2);
+      if (summary) summary += ' | ';
+      summary += `Modified: ${modified.join(', ')}`;
     }
     
-    // Health status
-    const health = this.currentState.health;
-    summary += `**Context Health:** Quality: ${(health.quality * 100).toFixed(0)}%, `;
-    summary += `Coherence: ${(health.coherence * 100).toFixed(0)}%, `;
-    summary += `Completeness: ${(health.completeness * 100).toFixed(0)}%\n`;
-    
-    return summary;
+    // Return very compact summary or empty if no essential context
+    return summary.trim();
   }
 
   /**
