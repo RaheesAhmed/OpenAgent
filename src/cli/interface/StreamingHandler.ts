@@ -3,7 +3,7 @@ import { BRAND_COLORS, STATUS_ICONS } from "./logo.js";
 
 export class StreamingHandler {
   private frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-  // private gradientFrames = ["●", "◐", "◑", "◒", "◓", "◔", "◕", "◖", "◗", "○"];
+  
   private interval: NodeJS.Timeout | null = null;
   private frameIndex = 0;
   private currentStatus = "";

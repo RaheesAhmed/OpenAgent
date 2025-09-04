@@ -58,18 +58,33 @@ function createStyledPrompt(): string {
          chalk.hex(BRAND_COLORS.primary)(' You\n└─➤ ');
 }
 
+
+
 async function startInteractiveChat(): Promise<void> {
   const readline = await import('readline');
   
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: createStyledPrompt()
+    prompt: createStyledPrompt(),
+    completer: (line: string) => {
+      if (!slashCommandHandler || !line.startsWith('/')) {
+        return [[], line];
+      }
+      
+      const commands = slashCommandHandler.getCommands();
+      const hits = commands
+        .map(cmd => `/${cmd.name}`)
+        .filter(cmd => cmd.startsWith(line));
+      
+      return [hits, line];
+    }
   });
 
   await showWelcomeScreen();
   
   console.log(chalk.hex(BRAND_COLORS.text)('\n' + STATUS_ICONS.sparkles + ' OpenAgent is ready! Start by asking a question or typing a command.\n'));
+  console.log(chalk.hex(BRAND_COLORS.muted)('💡 Tip: Type "/" and press Tab for command suggestions\n'));
   
   rl.prompt();
 
@@ -85,6 +100,28 @@ async function startInteractiveChat(): Promise<void> {
       return;
     }
     
+    if (message === '/') {
+      // Show all available commands when user just types "/"
+      if (slashCommandHandler) {
+        console.log('\n' + chalk.hex(BRAND_COLORS.primary).bold('🚀 Available Commands:'));
+        const commands = slashCommandHandler.getCommands()
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .slice(0, 10); // Show first 10 commands
+        
+        commands.forEach(cmd => {
+          const aliases = cmd.aliases ? chalk.hex(BRAND_COLORS.muted)(` (${cmd.aliases.map(a => `/${a}`).join(', ')})`) : '';
+          console.log(`  ${chalk.hex(BRAND_COLORS.primary)(`/${cmd.name}`)}${aliases} - ${chalk.hex(BRAND_COLORS.text)(cmd.description)}`);
+        });
+        
+        console.log(`\n${chalk.hex(BRAND_COLORS.muted)('💡 Type the full command or use Tab completion')}`);
+      }
+      
+      console.log('\n' + createDivider('─', BRAND_COLORS.muted));
+      rl.setPrompt(createStyledPrompt());
+      rl.prompt();
+      return;
+    }
+    
     if (message) {
       console.log();
       
@@ -95,28 +132,23 @@ async function startInteractiveChat(): Promise<void> {
           console.error(chalk.hex(BRAND_COLORS.error)(`${STATUS_ICONS.error} Command error: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
       } else {
-        // Show loading animation while agent processes, then let agent handle streaming
+        // Show loading animation while agent processes
         const streamingHandler = new StreamingHandler();
         globalStreamingHandler = streamingHandler;
         
         try {
-          // Start subtle loading animation - agent will stop it when content starts
           streamingHandler.start('🤖 OpenAgent is thinking', true);
           
           const response = await agentManager.processMessage(message);
           
-          // Ensure spinner is stopped without clearing (let agent content flow)
           if (streamingHandler.isRunning()) {
-            streamingHandler.stop(); // No clearing - agent content writes over spinner
+            streamingHandler.stop();
           }
           
-          // Agent handles all output - we just ensure success
           if (!response.success) {
             console.error(chalk.hex(BRAND_COLORS.error)(`${STATUS_ICONS.error} ${response.content}`));
           }
-          
         } catch (error) {
-          // For errors, clear the line and show error
           streamingHandler.stopAndClear();
           console.error(chalk.hex(BRAND_COLORS.error)(`${STATUS_ICONS.error} Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
         } finally {

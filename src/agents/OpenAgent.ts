@@ -30,6 +30,7 @@ import { MCPClientManager } from '../mcp/client/MCPClient.js';
 
 import { allFileTools } from "../tools/fileTools.js";
 import { allTerminalTools } from "../tools/terminal.js";
+import {allProjectTools} from '../tools/index.js'
 
 
 // Configuration interface for OpenAgent
@@ -181,7 +182,13 @@ export class OpenAgent {
       const mcpTools = await this.mcpClient.getTools();
 
       // Combine all tools (custom file tools + terminal tools + user-configured MCP tools)
-      const allTools = [...memoryTools, ...mcpTools, ...allFileTools, ...allTerminalTools];
+      const allTools = [
+        ...memoryTools,
+        ...mcpTools,
+        ...allFileTools,
+        ...allTerminalTools,
+        ...allProjectTools,
+      ];
 
       // Create the LangGraph ReAct agent
       this.agent = createReactAgent({
