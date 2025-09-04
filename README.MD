@@ -15,6 +15,8 @@
   ## **SOME FEATURES MAY NOT WORK AS EXPECTED**
   
 </div>
+<img src="assets/Screenshot.png" alt="OpenAgent"/>
+
 
 ---
 
