@@ -97,7 +97,7 @@ node ./dist/index.js
 
 ## Architecture
 
-OpenAgent uses a modular architecture with the following components:
+OpenAgent architecture:
 
 ```
 OpenAgent/
