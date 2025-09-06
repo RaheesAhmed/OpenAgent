@@ -30,7 +30,6 @@ export class ProjectSetup {
 
       await this.createOpenAgentDirectory();
       await this.createMcpServersConfig();
-      await this.createRulesFile();
       await this.generateOpenAgentMD();
       await this.updateGitignore();
 
@@ -81,38 +80,7 @@ export class ProjectSetup {
     }
   }
 
-  /**
-   * Create rules.md file
-   */
-  private async createRulesFile(): Promise<void> {
-    const rulesPath = path.join(this.openagentDir, "rules.md");
 
-    // Only create if it doesn't exist
-    if (!(await fs.pathExists(rulesPath))) {
-      const defaultRules = `# OpenAgent Project Rules
-
-Add your custom rules and guidelines for this project here.
-
-## Example Rules:
-
-- Always use TypeScript for new files
-- Follow the existing code style and patterns
-- Write tests for new functionality
-- Use meaningful variable and function names
-- Add comments for complex logic
-
-## Custom Instructions:
-
-You can add specific instructions for your project here that OpenAgent should follow.
-
-## MCP Server Configuration:
-
-Edit the mcp-servers.json file to add MCP servers for additional tools and capabilities.
-`;
-
-      await fs.writeFile(rulesPath, defaultRules, "utf8");
-    }
-  }
 
   /**
    * Generate OPENAGENT.MD file automatically during setup
@@ -163,7 +131,7 @@ Add your project-specific instructions here.
         const config = await fs.readJson(mcpConfigPath);
 
         // Convert the mcpServers object to an array for the API
-        // Only include HTTP-based MCP servers (not local STDIO servers)
+       
         const servers = [];
         for (const [key, serverConfig] of Object.entries(
           config.mcpServers || {}
@@ -178,7 +146,7 @@ Add your project-specific instructions here.
                 name: configObj.name || key,
               });
             }
-            // Skip STDIO servers as they're not supported by Anthropic MCP connector
+            
           }
         }
 
@@ -194,31 +162,7 @@ Add your project-specific instructions here.
     return [];
   }
 
-  /**
-   * Load custom rules
-   */
-  async loadCustomRules(): Promise<string> {
-    try {
-      const rulesPath = path.join(this.openagentDir, "rules.md");
 
-      if (await fs.pathExists(rulesPath)) {
-        const rules = await fs.readFile(rulesPath, "utf8");
-
-        // Filter out empty lines and comments for the prompt
-        const cleanedRules = rules
-          .split("\n")
-          .filter((line) => line.trim() && !line.trim().startsWith("#"))
-          .join("\n")
-          .trim();
-
-        return cleanedRules;
-      }
-    } catch (error) {
-      console.error(chalk.yellow("Failed to load custom rules:"), error);
-    }
-
-    return "";
-  }
 
   /**
    * Update .gitignore to include .openagent/ folder

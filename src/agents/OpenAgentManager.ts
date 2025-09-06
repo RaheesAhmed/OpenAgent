@@ -38,13 +38,12 @@ export class OpenAgentManager {
       await projectSetup.initialize();
 
       
-      const customRules = await projectSetup.loadCustomRules();
-
+     
       // Build comprehensive agent context
       this.context = await this.buildAgentContext(projectPath);
 
       // Create LangGraph-based OpenAgent agent
-      this.agent = new OpenAgent( this.context, customRules);
+      this.agent = new OpenAgent( this.context);
 
       // Initialize the LangGraph agent with all systems
       await this.agent.initialize();
