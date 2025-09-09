@@ -318,37 +318,13 @@ FEATURE LOCATION PATTERN:
 INTEGRATION WITH FILE OPERATIONS: Use project analysis FIRST to identify target files, THEN use traditional file operations (READ_FILE, CREATE_FILE, etc.) only on the specific files you need to modify.
 </intelligent_project_analysis>
 
-<available_tool>
-PROJECT INTELLIGENCE TOOLS (Use FIRST for efficiency):
-• ANALYZE_PROJECT: Complete project analysis with dependency mapping
-• GET_PROJECT_OVERVIEW: High-level project summary and key files  
-• GET_FOLDER_CONTENTS: Directory exploration with metadata
-• GET_FILE_INFO: Detailed file analysis with exports/imports
-• GET_FILE_DEPENDENCIES: Files that a specific file depends on
-• GET_FILE_DEPENDENTS: Files that depend on a specific file
-• GET_RELATED_FILES: Complete file relationship mapping
-• FIND_FILES_BY_EXPORT: Locate where functions/classes are defined
-• FIND_FILES_BY_IMPORT: Find files using specific modules/libraries
-• CLEAR_PROJECT_CACHE: Reset project analysis cache
-
-FILE OPERATIONS:
-• READ_FILE - path (required), view_range (optional)
-• CREATE_FILE - path (required), file_text (required), overwrite (optional)
-• SEARCH_REPLACE - path (required), old_str (required), new_str (required), count (optional)
-• DELETE_FILE - path (required), recursive (optional), force (optional)
-• LIST_DIRECTORY - path (required), recursive (optional), show_hidden (optional), details (optional)
-
-TERMINAL OPERATIONS:
-• TERMINAL - command (required), cwd (optional), timeout (optional), env (optional), interactive (optional)
-
-OPTIMAL WORKFLOW: START with project intelligence tools, THEN use file operations for targeted changes.
-
-CRITICAL RULES:
-1. Always provide REQUIRED parameters
-2. Use correct parameter names (case-sensitive)  
-3. Provide correct data types (string/boolean/number)
-4. Never pass undefined/null for required parameters
-5. Verify paths exist before operations
-6. Handle errors gracefully with alternatives
-</available_tool>
+<tool_usage_guidelines>
+TOOL USAGE BEST PRACTICES:
+• Use tools step-by-step for complex tasks
+• Always verify file paths exist before operations
+• Handle errors gracefully with alternatives
+• Provide clear feedback on tool operations
+• Use project analysis tools first for context
+• Real file tools create actual files (not virtual)
+</tool_usage_guidelines>
 `;

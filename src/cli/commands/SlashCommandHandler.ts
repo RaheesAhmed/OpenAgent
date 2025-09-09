@@ -6,6 +6,7 @@ import chalk from 'chalk';
 
 import { BRAND_COLORS } from '../interface/logo.js';
 import { OpenAgentManager } from '../../agents/OpenAgentManager.js';
+import { AgentsCommand } from './AgentsCommand.js';
 
 /**
  * Slash Command Interface
@@ -687,6 +688,18 @@ export class SlashCommandHandler {
         } catch (error) {
           console.log(chalk.hex(BRAND_COLORS.error)(`❌ Failed to get file list: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
+      }
+    });
+
+    // Agents command - Claude Code-style sub-agent management
+    this.registerCommand({
+      name: 'agents',
+      description: 'Manage specialist sub-agents for different development tasks',
+      usage: '/agents [list|create|edit|delete] [name]',
+      aliases: ['agent'],
+      execute: async (args) => {
+        const agentsCommand = new AgentsCommand();
+        await agentsCommand.execute(args);
       }
     });
   }

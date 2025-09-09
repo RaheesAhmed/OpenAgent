@@ -8,9 +8,8 @@
 
 
 import { initChatModel } from "langchain/chat_models/universal";
-import { createReactAgent } from '@langchain/langgraph/prebuilt';
+import { createDeepAgent } from 'deepagents';
 import { InMemoryStore, type LangGraphRunnableConfig } from '@langchain/langgraph';
-import { MemorySaver } from "@langchain/langgraph-checkpoint";
 
 import { tool } from '@langchain/core/tools';
 import { isAIMessageChunk } from '@langchain/core/messages';
@@ -21,18 +20,17 @@ import path from 'path';
 
 import { AgentConfig, AgentResponse, AgentContext } from '../types/agent.js';
 import { OPENAGENT_SYSTEM_PROMPT } from '../prompts/openagent_prompt.js';
-import { TokenCounter } from '../core/tokens/TokenCounter.js';
+
 import { ContextManager } from '../core/context/ContextManager.js';
 import { OpenAgentContext } from '../core/context/OpenAgentContext.js';
-import { TokenOptimizer } from '../core/optimization/TokenOptimizer.js';
+
 import { ValidationEngine } from '../core/validation/ValidationEngine.js';
 import { MemoryIntegration } from '../memory/index.js';
 import { MCPClientManager } from '../mcp/client/MCPClient.js';
+import { SubAgentLoader } from '../core/agents/SubAgentLoader.js';
 
-import { allFileTools } from "../tools/fileTools.js";
+import { allProjectTools, allFileTools, allContextTools } from '../tools/index.js'
 import { allTerminalTools } from "../tools/terminal.js";
-import {allProjectTools} from '../tools/index.js'
-
 
 // Configuration interface for OpenAgent
 export interface OpenAgentConfig {
@@ -61,16 +59,15 @@ export class OpenAgent {
   private agent: any;
   private config: AgentConfig;
   private openAgentConfig: OpenAgentConfig;
-  private tokenCounter: TokenCounter;
+
   private contextManager: ContextManager;
   private openAgentContext: OpenAgentContext;
-  private tokenOptimizer: TokenOptimizer;
+
   private validationEngine: ValidationEngine;
   private memoryIntegration: MemoryIntegration;
   private store: InMemoryStore;
-  private checkpointer: MemorySaver;
-  // Note: InMemoryCache not yet supported by createReactAgent prebuilt
-  // Custom graph implementation needed for full caching support
+  private subAgentLoader: SubAgentLoader;
+  
   private context: AgentContext;
   private chatModel: any;
   private customRules: string;
@@ -84,10 +81,10 @@ export class OpenAgent {
     this.openAgentConfig = DEFAULT_CONFIG;
     
     // Initialize core systems
-    this.tokenCounter = new TokenCounter();
+ 
     this.contextManager = new ContextManager(context.projectPath);
     this.openAgentContext = new OpenAgentContext(context.projectPath);
-    this.tokenOptimizer = new TokenOptimizer(context.projectPath);
+   
     this.validationEngine = new ValidationEngine(context.projectPath, {
       enabled: true,
       strictMode: false,
@@ -104,16 +101,18 @@ export class OpenAgent {
     // Initialize MCP client for filesystem operations
     this.mcpClient = new MCPClientManager(context.projectPath);
 
+    // Initialize sub-agent loader for file-based sub-agents
+    this.subAgentLoader = new SubAgentLoader(context.projectPath);
+
     // Initialize LangGraph components
     this.store = new InMemoryStore();
-    this.checkpointer = new MemorySaver();
     
 
     this.config = {
-      id: "openagent-langgraph",
-      name: "OpenAgent LangGraph",
+      id: "openagent",
+      name: "OpenAgent",
       description: "Advanced AI development assistant powered by LangGraph",
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-20250514",
       systemPrompt: this.buildSystemPrompt(),
       tools: [],
       capabilities: [
@@ -123,7 +122,7 @@ export class OpenAgent {
           enabled: true,
         },
         {
-          name: "project_management", 
+          name: "project_management",
           description: "Manage project structure and dependencies",
           enabled: true,
         },
@@ -141,9 +140,9 @@ export class OpenAgent {
           name: "human_interaction",
           description: "Human-in-the-loop workflows with approval steps",
           enabled: true,
-        }
+        },
       ],
-      maxTokens: 4096,
+      maxTokens: 64000,
       temperature: 0.1,
       metadata: {
         category: "development",
@@ -169,11 +168,17 @@ export class OpenAgent {
       // Load configuration from .openagent/config.json
       await this.loadConfiguration();
       
-      // Initialize universal chat model
+      // Initialize universal chat model with prompt caching enabled
       this.chatModel = await initChatModel(this.openAgentConfig.model, {
         temperature: this.openAgentConfig.temperature,
         maxTokens: this.openAgentConfig.maxTokens,
-        streaming: this.openAgentConfig.streamingEnabled
+        streaming: this.openAgentConfig.streamingEnabled,
+        // Enable prompt caching for system prompts and tools (saves 90% on repeated content)
+        modelKwargs: {
+          extra_headers: {
+            'anthropic-beta': 'prompt-caching-2024-07-31'
+          }
+        }
       });
 
       // Chat model initialized successfully - silent for clean UX
@@ -187,28 +192,31 @@ export class OpenAgent {
       // Get MCP tools (only from mcp-servers.json, no built-in tools)
       const mcpTools = await this.mcpClient.getTools();
 
-      // Combine all tools (custom file tools + terminal tools + user-configured MCP tools)
+      // Combine tools - Deep Agents built-in + our real filesystem tools
+      // Deep Agents provides: read_file, write_file, edit_file, ls (virtual filesystem)
+      // We provide: create_real_file, read_real_file, etc. (real filesystem)
       const allTools = [
-        ...memoryTools,
-        ...mcpTools,
-        ...allFileTools,
-        ...allTerminalTools,
-        ...allProjectTools,
+        ...allFileTools, // Real filesystem tools with unique names
+        ...memoryTools, // Memory management tools
+        ...mcpTools, // MCP server tools
+        ...allTerminalTools, // Terminal execution tools
+        ...allProjectTools, // Project analysis tools
+        ...allContextTools,//OpenAgent Context Tools
       ];
 
-      // Create the LangGraph ReAct agent with caching to reduce token usage
-      this.agent = createReactAgent({
-        llm: this.chatModel,
+      // Load sub-agents for Deep Agent system
+      const subAgents = await this.loadSubAgents();
+
+      // Create the Deep Agent with advanced planning and sub-agent capabilities
+      this.agent = createDeepAgent({
+        model: this.chatModel,
         tools: allTools,
-        stateModifier: await this.buildContextualSystemPrompt(),
-        checkpointSaver: this.checkpointer,
-        interruptBefore: [], // Disable interrupts for now to fix basic functionality
+        instructions: this.buildCleanSystemPrompt(), // Clean system prompt only
+        subagents: subAgents,
+        // Deep Agents handles checkpointing internally
       });
 
-      // Note: createReactAgent may not support direct cache parameter
-      // If token usage remains high, we may need to build custom agent with cache support
-
-      //console.log(chalk.green('🚀 OpenAgent LangGraph agent initialized successfully!'));
+      
     } catch (error) {
       console.error(chalk.red('❌ Failed to initialize OpenAgent agent:'), error);
       throw error;
@@ -282,10 +290,18 @@ export class OpenAgent {
         throw contextError;
       }
       
+      // Get project context to include with user message (not system prompt)
+      const projectContext = await this.getProjectContext();
+      
+      // Combine user message with project context
+      const enrichedUserMessage = projectContext ?
+        `${projectContext}User Request: ${message}` :
+        message;
+      
       const messages = [
-        { role: "user", content: message }
+        { role: "user", content: enrichedUserMessage }
       ];
-      // Messages prepared for LangGraph processing
+      // Messages prepared for LangGraph processing with project context
       
       // Prepare LangGraph configuration with proper user ID for cross-thread persistence
       const runConfig: LangGraphRunnableConfig = {
@@ -293,32 +309,24 @@ export class OpenAgent {
           thread_id: threadId,
           userId: this.context.session.id  // FIXED: Use userId instead of user_id for LangGraph Store
         },
-        store: this.store
+        store: this.store,
+        recursionLimit: 100  // FIXED: Increase recursion limit to handle complex multi-step tasks
       };
       // LangGraph configuration ready
 
       let finalResponse = '';
       let totalUsage = { input_tokens: 0, output_tokens: 0 };
 
-      // Create agent stream
+      // Use proper LangGraph streaming patterns from documentation
+      // 1. streamEvents for detailed tool tracking
+      // 2. stream with messages mode for LLM token streaming
       
-      // Stream the agent response with multiple modes for enhanced tool visibility
-      const stream = await this.agent.stream(
-        { messages },
-        {
-          ...runConfig,
-          streamMode: ["updates", "debug", "messages"]  // Enhanced streaming: tools + content
-        }
-      );
-      // Process streaming response
-      // Handle streaming response
-      const streamResult = await this.handleLangGraphStream(stream);
+      const streamResult = await this.handleProperLangGraphStream({ messages }, runConfig);
       finalResponse = streamResult.content;
       totalUsage = streamResult.usage;
-      // Stream processing completed
+      // Stream processing completed with proper LangGraph patterns
 
-      // Display cost information
-      this.displayCost(totalUsage);
+      
 
       // Update context with AI response
       await this.contextManager.updateConversation('assistant', finalResponse);
@@ -353,13 +361,7 @@ export class OpenAgent {
         streamResult.toolUses.map(t => t.name)
       );
 
-      // Track usage (no optimization to prevent corruption)
-      await this.tokenOptimizer.trackUsage(
-        totalUsage.input_tokens,
-        totalUsage.output_tokens,
-        this.config.model,
-        0 
-      );
+     
 
       // Validate generated code if response exists
       if (finalResponse) {
@@ -382,7 +384,8 @@ export class OpenAgent {
         thread_id: threadId,
         userId: this.context.session.id  // FIXED: Use userId for consistency with Store API
       },
-      store: this.store
+      store: this.store,
+      recursionLimit: 100  // FIXED: Increase recursion limit to handle complex multi-step tasks
     };
 
     try {
@@ -391,13 +394,8 @@ export class OpenAgent {
         await this.agent.updateState(runConfig, modifications);
       }
 
-      // Resume the agent execution
-      const stream = await this.agent.stream(null, {
-        ...runConfig,
-        streamMode: ["values", "messages"]
-      });
-
-      const streamResult = await this.handleLangGraphStream(stream);
+      // Resume the agent execution using proper streaming patterns
+      const streamResult = await this.handleProperLangGraphStream({ messages: [] }, runConfig);
 
       return {
         success: true,
@@ -426,18 +424,22 @@ export class OpenAgent {
     const runConfig: LangGraphRunnableConfig = {
       configurable: {
         thread_id: threadId,
-        userId: this.context.session.id  
-      }
+        userId: this.context.session.id
+      },
+      recursionLimit: 100  // Increased recursion limit to handle complex multi-step tasks
     };
 
     return await this.agent.getState(runConfig);
   }
 
   /**
-   * Handle LangGraph streaming response with enhanced tool visibility
-   * Using multiple streaming modes: ["updates", "debug"] for detailed tool tracking
+   * Handle LangGraph streaming with proper patterns from documentation
+   * Uses streamEvents for tool tracking and stream with messages for LLM tokens
    */
-  private async handleLangGraphStream(stream: any): Promise<{
+  private async handleProperLangGraphStream(
+    input: { messages: any[] },
+    runConfig: LangGraphRunnableConfig
+  ): Promise<{
     content: string;
     toolUses: any[];
     usage: { input_tokens: number; output_tokens: number };
@@ -461,33 +463,187 @@ export class OpenAgent {
     };
 
     try {
-      // Process enhanced streaming with updates and debug info
-      for await (const [streamType, streamData] of stream) {
-        if (streamType === 'updates') {
-          // Handle update events for tool calls and content
-          const result = await this.handleUpdateEvent(streamData, clearSpinner);
-          
-          fullContent += result.content;
-          
-          if (result.toolUses.length > 0) {
-            toolUses.push(...result.toolUses);
-          }
-          
-          if (result.usage.input_tokens > 0 || result.usage.output_tokens > 0) {
-            usage.input_tokens += result.usage.input_tokens;
-            usage.output_tokens += result.usage.output_tokens;
-          }
-        } else if (streamType === 'debug') {
-          // Handle debug events for step visibility
-          this.handleDebugEvent(streamData);
-        } else if (streamType === 'messages') {
-          // Clear spinner immediately when messages detected
+      // Method 1: Use streamEvents for comprehensive tool tracking (like the documentation)
+      const eventStream = this.agent.streamEvents(
+        input,
+        { ...runConfig, version: "v2" }
+      );
+
+      let messageContentBuffer = '';
+      let isProcessingTool = false;
+
+      for await (const { event, name, data } of eventStream) {
+        // Handle LLM token streaming
+        if (event === "on_chat_model_stream" && isAIMessageChunk(data.chunk)) {
           clearSpinner();
           
-          // Handle message streaming (actual LLM response content)
-          this.handleMessageStream(streamData);
+          // Handle tool call chunks
+          if (data.chunk.tool_call_chunks && data.chunk.tool_call_chunks.length > 0) {
+            for (const toolChunk of data.chunk.tool_call_chunks) {
+              if (toolChunk.name && !isProcessingTool) {
+                console.log(`\n${chalk.dim('🔧')} ${chalk.cyan(toolChunk.name)}`);
+                isProcessingTool = true;
+                toolUses.push({
+                  id: toolChunk.id,
+                  name: toolChunk.name,
+                  input: toolChunk.args
+                });
+              }
+            }
+          }
+          
+          // Handle content streaming with proper type checking
+          if (data.chunk.content) {
+            let contentText = '';
+            if (typeof data.chunk.content === 'string') {
+              contentText = data.chunk.content;
+            } else if (Array.isArray(data.chunk.content)) {
+              // Handle complex message content format
+              contentText = data.chunk.content
+                .map((part: any) => {
+                  if (typeof part === 'string') {
+                    return part;
+                  } else if (part && typeof part === 'object' && 'text' in part) {
+                    return part.text || '';
+                  }
+                  return '';
+                })
+                .join('');
+            }
+            
+            if (contentText) {
+              process.stdout.write(contentText);
+              messageContentBuffer += contentText;
+            }
+          }
+
+          // Extract usage metadata
+          if (data.chunk.usage_metadata) {
+            usage.input_tokens += data.chunk.usage_metadata.input_tokens || 0;
+            usage.output_tokens += data.chunk.usage_metadata.output_tokens || 0;
+          }
+        }
+
+        // Handle tool events
+        else if (event === "on_tool_start") {
+          clearSpinner();
+          const toolName = data.name || name || 'unknown_tool';
+          
+          // Special handling for TODO tools with beautiful formatting
+          if (toolName.includes('todos') || toolName.includes('todo')) {
+            console.log(`\n${chalk.blue('📝 Managing Task List...')}`);
+            
+            // Parse and display beautiful TODO list from input
+            if (data.input) {
+              try {
+                let todoInput = data.input;
+                
+                // Handle nested input structure
+                if (typeof todoInput === 'object' && todoInput.input) {
+                  todoInput = todoInput.input;
+                }
+                
+                // Parse JSON string if needed
+                if (typeof todoInput === 'string') {
+                  todoInput = JSON.parse(todoInput);
+                }
+                
+                if (todoInput.todos && Array.isArray(todoInput.todos)) {
+                  console.log(chalk.blue('\n📋 Current Task Progress:'));
+                  todoInput.todos.forEach((todo: any, index: number) => {
+                    const status = todo.status || 'pending';
+                    let statusIcon = '';
+                    let statusColor = chalk.gray;
+                    
+                    switch (status) {
+                      case 'completed':
+                        statusIcon = '✅';
+                        statusColor = chalk.green;
+                        break;
+                      case 'in_progress':
+                      case 'in-progress':
+                        statusIcon = '🔄';
+                        statusColor = chalk.yellow;
+                        break;
+                      case 'pending':
+                      default:
+                        statusIcon = '⏳';
+                        statusColor = chalk.gray;
+                        break;
+                    }
+                    
+                    const taskNumber = `${index + 1}.`.padEnd(3);
+                    console.log(`   ${statusColor(statusIcon)} ${taskNumber}${statusColor(todo.content || 'Unknown task')}`);
+                  });
+                  console.log(''); // Add spacing
+                }
+              } catch (e) {
+                // Fallback to regular tool display
+                console.log(`\n${chalk.cyan(`🔧 ${toolName}`)}`);
+                const inputStr = typeof data.input === 'string'
+                  ? data.input
+                  : JSON.stringify(data.input, null, 2);
+                if (inputStr.length < 200) {
+                  console.log(chalk.gray(`   Input: ${inputStr}`));
+                }
+              }
+            }
+          } else {
+            // Regular tool display
+            console.log(`\n${chalk.cyan(`🔧 ${toolName}`)}`);
+            
+            // Show tool input
+            if (data.input) {
+              const inputStr = typeof data.input === 'string'
+                ? data.input
+                : JSON.stringify(data.input, null, 2);
+              if (inputStr.length < 200) {
+                console.log(chalk.gray(`   Input: ${inputStr}`));
+              } else {
+                console.log(chalk.gray(`   Input: ${inputStr.substring(0, 200)}...`));
+              }
+            }
+          }
+        }
+        
+        else if (event === "on_tool_end") {
+          const toolName = data.name || name || 'tool';
+          
+          // Special handling for TODO tools - simplified completion
+          if (toolName.includes('todos') || toolName.includes('todo')) {
+            console.log(chalk.green(`✅ Task list updated successfully\n`));
+          } else {
+            // Regular tool completion
+            console.log(chalk.green(`✅ ${toolName} completed`));
+            
+            // Show result if available and short
+            if (data.output && typeof data.output === 'string' && data.output.length < 200) {
+              console.log(chalk.dim(`   Result: ${data.output}`));
+            } else if (data.output) {
+              console.log(chalk.dim('   Result: [Output available]'));
+            }
+          }
+          
+          isProcessingTool = false;
+        }
+
+        // Handle other events for debugging if needed
+        else if (event === "on_chain_start" && name === "agent") {
+          // Agent started - could show progress here
+        }
+        else if (event === "on_chain_end" && name === "agent") {
+          // Agent completed
+          if (data.output && data.output.messages) {
+            const lastMessage = data.output.messages[data.output.messages.length - 1];
+            if (lastMessage && lastMessage.content && typeof lastMessage.content === 'string') {
+              fullContent += lastMessage.content;
+            }
+          }
         }
       }
+
+      // Add any remaining buffered content
+      fullContent += messageContentBuffer;
 
       // If spinner was never stopped (no content streamed), stop it now
       if (!spinnerStopped && globalStreamingHandler) {
@@ -499,7 +655,50 @@ export class OpenAgent {
       }
 
     } catch (error) {
-      console.error(chalk.red('Error handling enhanced LangGraph stream:'), error);
+      console.error(chalk.red('Error in proper LangGraph streaming:'), error);
+      
+      // Fallback to simple stream approach
+      try {
+        const simpleStream = await this.agent.stream(
+          input,
+          { ...runConfig, streamMode: "messages" }
+        );
+
+        for await (const [message] of simpleStream) {
+          clearSpinner();
+          if (isAIMessageChunk(message) && message.content) {
+            // Handle content with proper type checking
+            let contentText = '';
+            if (typeof message.content === 'string') {
+              contentText = message.content;
+            } else if (Array.isArray(message.content)) {
+              contentText = message.content
+                .map((part: any) => {
+                  if (typeof part === 'string') {
+                    return part;
+                  } else if (part && typeof part === 'object' && 'text' in part) {
+                    return part.text || '';
+                  }
+                  return '';
+                })
+                .join('');
+            }
+            
+            if (contentText) {
+              process.stdout.write(contentText);
+              fullContent += contentText;
+            }
+            
+            if (message.usage_metadata) {
+              usage.input_tokens += message.usage_metadata.input_tokens || 0;
+              usage.output_tokens += message.usage_metadata.output_tokens || 0;
+            }
+          }
+        }
+      } catch (fallbackError) {
+        console.error(chalk.red('Fallback streaming also failed:'), fallbackError);
+      }
+      
       // Make sure spinner is stopped even on error
       if (globalStreamingHandler) {
         globalStreamingHandler.stop();
@@ -509,127 +708,7 @@ export class OpenAgent {
     return { content: fullContent, toolUses, usage };
   }
 
-  /**
-   * Handle debug events for step-by-step execution visibility
-   */
-  private handleDebugEvent(debugData: any): void {
-    try {
-      if (debugData.type === 'task') {
-        const { payload } = debugData;
-        const { name } = payload;
-        
-        if (name === 'tools') {
-          // Show when tools are being executed with proper spacing
-          
-        }
-      }
-    } catch (error) {
-      // Silent fail for debug events
-    }
-  }
 
-  /**
-   * Handle update events for tool calls and content streaming
-   */
-  private async handleUpdateEvent(
-    updateData: any,
-    clearSpinner: () => void
-  ): Promise<{
-    content: string;
-    toolUses: any[];
-    usage: { input_tokens: number; output_tokens: number };
-  }> {
-    let content = '';
-    let toolUses: any[] = [];
-    let usage = { input_tokens: 0, output_tokens: 0 };
-
-    try {
-      // Handle agent updates (AI messages with tool calls)
-      if (updateData.agent?.messages) {
-        for (const message of updateData.agent.messages) {
-          if (isAIMessageChunk(message)) {
-            // Clear spinner IMMEDIATELY when any content is detected
-            if ((message.tool_calls && message.tool_calls.length > 0) || 
-                (message.content && typeof message.content === 'string')) {
-              clearSpinner();
-            }
-            
-            // Handle tool calls - show clean, minimal info with proper formatting
-            if (message.tool_calls && message.tool_calls.length > 0) {
-              for (const toolCall of message.tool_calls) {
-                // Clean, single-line tool call notification with spacing and dim formatting
-                console.log(`\n${chalk.dim('🔧')} ${chalk.cyan(toolCall.name)}`);
-                
-                toolUses.push({
-                  id: toolCall.id,
-                  name: toolCall.name,
-                  input: toolCall.args
-                });
-              }
-            }
-            
-            // Handle content streaming
-            if (message.content && typeof message.content === 'string') {
-              process.stdout.write(message.content);
-              content += message.content;
-            }
-            
-            // Extract usage metadata
-            if (message.usage_metadata) {
-              usage.input_tokens += message.usage_metadata.input_tokens || 0;
-              usage.output_tokens += message.usage_metadata.output_tokens || 0;
-            }
-          }
-        }
-      }
-      
-      // Handle tool results with dim formatting to reduce visual clutter
-      if (updateData.tools?.messages) {
-        // Clear spinner when tool results come in too
-        clearSpinner();
-        
-        for (const toolMessage of updateData.tools.messages) {
-          if (toolMessage.content) {
-            // Show tool results in dim format with proper spacing
-            const toolName = toolMessage.name || 'tool';
-            console.log(chalk.dim(`\n📋 ${toolName} result:`));
-            
-            // Format the result content - truncate if too long
-            let resultContent = typeof toolMessage.content === 'string'
-              ? toolMessage.content
-              : JSON.stringify(toolMessage.content);
-            
-            if (resultContent.length > 200) {
-              resultContent = resultContent.substring(0, 200) + '...';
-            }
-            
-            console.log(chalk.dim(resultContent));
-          }
-        }
-      }
-
-    } catch (error) {
-      // Silent error handling to avoid cluttering output
-    }
-
-    return { content, toolUses, usage };
-  }
-
-  /**
-   * Handle message streaming for real-time LLM response content
-   */
-  private handleMessageStream(messageData: any): void {
-    try {
-      const [message] = messageData;
-      
-      // Content is in message.content[0].text format for Anthropic models
-      if (message && message.content && Array.isArray(message.content) && message.content[0] && message.content[0].text) {
-        process.stdout.write(message.content[0].text);
-      }
-    } catch (error) {
-      // Silent fail to avoid cluttering output
-    }
-  }
 
   /**
    * Create memory management tools using correct MemoryIntegration API
@@ -781,40 +860,83 @@ export class OpenAgent {
     await this.contextManager.initialize(this.context.session.id);
     
     // Initialize token optimizer
-    await this.tokenOptimizer.initialize();
+    //await this.tokenOptimizer.initialize();
     
     // Initialize validation engine
     await this.validationEngine.initialize();
   }
 
+
+
   /**
-   * Build contextual system prompt for LangGraph
+   * Build clean system prompt for Deep Agents with caching support (no project context)
    */
-  private async buildContextualSystemPrompt(): Promise<string> {
-    // Get base system prompt
-    let systemPrompt = this.config.systemPrompt;
+  private buildCleanSystemPrompt(): string {
+    // Return only the base system prompt - no project context mixed in
+    let prompt = this.config.systemPrompt;
     
-    // Add OPENAGENT.MD project context (like Claude Code's CLAUDE.md)
+    if (this.customRules && this.customRules.trim()) {
+      prompt += `\n\n## Custom Project Rules:\n${this.customRules}`;
+    }
+    
+    // Add cache control marker for 90% cost savings on repeated system prompts
+    // This tells Anthropic to cache this content for 5 minutes
+    prompt += '\n\n<!-- CACHE_CONTROL_EPHEMERAL -->';
+    
+    return prompt;
+  }
+
+  /**
+   * Load sub-agents from markdown files
+   */
+  private async loadSubAgents(): Promise<any[]> {
+    try {
+      // Initialize sub-agents directory if needed
+      await this.subAgentLoader.initializeSubAgents();
+      
+      // Load all sub-agents from .openagent/agents/
+      const subAgentConfigs = await this.subAgentLoader.loadSubAgents();
+      
+      // Convert to Deep Agents format
+      return subAgentConfigs.map(config => ({
+        name: config.name,
+        description: config.description,
+        prompt: config.prompt,
+        tools: config.tools // Optional - inherits all if undefined
+      }));
+    } catch (error) {
+      console.warn('Warning: Failed to load sub-agents:', error);
+      return []; // Return empty array if loading fails
+    }
+  }
+
+  /**
+   * Get project context for user message (separate from system prompt)
+   */
+  private async getProjectContext(): Promise<string> {
+    let context = '';
+    
+    // Add OPENAGENT.MD project context
     try {
       const projectContext = await this.openAgentContext.getProjectContext();
       if (projectContext && projectContext.trim()) {
-        systemPrompt += `\n\n## Project Context (OPENAGENT.MD):\n${projectContext}`;
+        context += `## Project Context (OPENAGENT.MD):\n${projectContext}\n\n`;
       }
     } catch (error) {
       console.warn('Warning: OpenAgent context loading failed:', error);
     }
     
-    // Add legacy context summary without corruption
+    // Add session context summary
     try {
       const contextSummary = this.contextManager.getContextSummary();
       if (contextSummary && contextSummary.trim()) {
-        systemPrompt += `\n\n## Session Context:\n${contextSummary}`;
+        context += `## Session Context:\n${contextSummary}\n\n`;
       }
     } catch (error) {
       console.warn('Warning: Context summary failed:', error);
     }
     
-    return systemPrompt;
+    return context;
   }
 
   /**
@@ -906,12 +1028,16 @@ export class OpenAgent {
   /**
    * Display cost information to user
    */
-  private displayCost(usage: { input_tokens: number; output_tokens: number }): void {
-    const costs = this.tokenCounter.calculateCost('claude-3-5-sonnet-20241022', usage.input_tokens, usage.output_tokens);
-    console.log(chalk.cyan(`\n💰 Cost: ${costs.formattedCost} (${usage.input_tokens} + ${usage.output_tokens} tokens)`));
+  // private displayCost(usage: { input_tokens: number; output_tokens: number }): void {
+  //   const costs = this.tokenCounter.calculateCost(
+  //     "claude-sonnet-4-20250514",
+  //     usage.input_tokens,
+  //     usage.output_tokens
+  //   );
+  //   console.log(chalk.cyan(`\n💰 Cost: ${costs.formattedCost} (${usage.input_tokens} + ${usage.output_tokens} tokens)`));
     
     
-  }
+  // }
 
   /**
    * Create error response

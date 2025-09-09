@@ -109,11 +109,11 @@ export const addContextInstructionTool = tool(
   {
     name: "add_context_instruction",
     description: "Add new instruction to OpenAgent context file",
-    schema: zodToJsonSchema(z.object({
+    schema: z.object({
       instruction: z.string().describe("Instruction to add to context"),
       section: z.string().optional().describe("Section to add instruction to (default: rules)"),
       projectPath: z.string().optional().describe("Path to project directory")
-    }))
+  })
   }
 );
 
@@ -143,9 +143,9 @@ export const getProjectContextTool = tool(
   {
     name: "get_project_context",
     description: "Get the current project context from OPENAGENT.MD files",
-    schema: zodToJsonSchema(z.object({
+    schema: z.object({
       projectPath: z.string().optional().describe("Path to project directory")
-    }))
+    })
   }
 );
 
@@ -181,10 +181,10 @@ export const getPathContextTool = tool(
   {
     name: "get_path_context",
     description: "Get context for a specific file or directory path",
-    schema: zodToJsonSchema(z.object({
+    schema: z.object({
       targetPath: z.string().describe("Path to get context for"),
       projectPath: z.string().optional().describe("Path to project directory")
-    }))
+    })
   }
 );
 
@@ -221,11 +221,11 @@ export const updateContextFileTool = tool(
   {
     name: "update_context_file",
     description: "Update an OpenAgent context file with new content",
-    schema: zodToJsonSchema(z.object({
+    schema: z.object({
       targetPath: z.string().describe("Path to context file to update"),
       content: z.string().describe("New content for the context file"),
       projectPath: z.string().optional().describe("Path to project directory")
-    }))
+    })
   }
 );
 

@@ -48,7 +48,7 @@ export class OpenAgentContext {
    * Initialize and load all OPENAGENT.MD files in the project hierarchy
    */
   async initialize(): Promise<void> {
-    console.log('🔍 Loading OpenAgent context files...');
+   // console.log('🔍 Loading OpenAgent context files...');
     
     // Find all OPENAGENT.MD files
     await this.discoverContextFiles();
@@ -57,7 +57,7 @@ export class OpenAgentContext {
     await this.loadContextFiles();
     
     this.isLoaded = true;
-    console.log(`✅ Loaded ${this.contextFiles.length} OpenAgent context files`);
+   // console.log(`✅ Loaded ${this.contextFiles.length} OpenAgent context files`);
   }
 
   /**

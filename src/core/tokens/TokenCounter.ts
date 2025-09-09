@@ -34,7 +34,13 @@ export class TokenCounter {
     },
     'claude-sonnet-4-20250514': {
       input: 3.00,
-      output: 15.00
+      output: 15.00,
+      inputLarge: 6.00, // >200K tokens
+      outputLarge: 22.50, // >200K tokens
+      cacheWrite: 3.75, // 5-minute cache write
+      cacheRead: 0.30, // 5-minute cache read
+      cacheWriteLarge: 7.50, // >200K cache write
+      cacheReadLarge: 0.60 // >200K cache read
     },
     'claude-opus-4-20250514': {
       input: 15.00,
@@ -342,29 +348,34 @@ export class TokenCounter {
   }
 
   /**
-   * Accurate token estimation that accounts for caching behavior
-   * Modern LLM APIs cache system prompts and tools after first use
+   * Accurate token estimation including system prompts, tools, and messages
+   * This provides realistic token counts for proper cost calculation
    */
   private estimateTokens(params: {
     system?: string;
     messages: Array<{ role: string; content: string }>;
     tools?: any[];
   }): number {
-    // Only count actual user messages - system prompt and tools are cached!
     let totalText = '';
     
-    for (const message of params.messages) {
-      // Only count user messages, not system/cached content
-      if (message.role === 'user') {
-        totalText += message.content;
-      }
+    // Count system prompt (this gets cached after first use with prompt caching)
+    if (params.system) {
+      totalText += params.system;
     }
     
-    // Note: System prompts and tools are cached by modern LLM APIs
-    // after first use, so we don't count them as fresh tokens
+    // Count tool definitions (these also get cached)
+    if (params.tools && params.tools.length > 0) {
+      const toolsText = JSON.stringify(params.tools);
+      totalText += toolsText;
+    }
     
-    // Rough estimation: ~4 characters per token
-    const estimatedTokens = Math.ceil(totalText.length / 4);
+    // Count all messages (user and assistant)
+    for (const message of params.messages) {
+      totalText += message.content;
+    }
+    
+    // More accurate estimation: ~3.5 characters per token (based on Anthropic docs)
+    const estimatedTokens = Math.ceil(totalText.length / 3.5);
     
     // Minimum of 1 token for any non-empty request
     return Math.max(1, estimatedTokens);

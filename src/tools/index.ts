@@ -5,21 +5,14 @@
  * Tools Index - Export all available tools for agents
  */
 
-// File system tools
+// File system tools - Real filesystem operations (different names to avoid Deep Agents conflicts)
 export {
-  readFileTool,
-  writeFileTool,
-  listDirectoryTool,
-  createDirectoryTool,
-  deleteTool,
-  moveTool,
-  searchFilesTool,
-  allFileTools,
-  type FileReadResult,
-  type FileWriteResult,
-  type DirectoryItem,
-  type ListDirectoryResult,
-  type SearchResult
+  createRealFileTool,
+  readRealFileTool,
+  updateRealFileTool,
+  listRealDirectoryTool,
+  createRealDirectoryTool,
+  allFileTools
 } from './fileTools.js';
 
 // Project analysis tools

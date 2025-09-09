@@ -401,14 +401,14 @@ export class OpenAgentManager {
       }
 
       if (response.metadata.tokensUsed) {
-        const tokens = response.metadata.tokensUsed;
-        console.log(
-          chalk.blue(
-            `📊 Tokens: ${tokens.input} in + ${tokens.output} out = ${
-              tokens.input + tokens.output
-            } total`
-          )
-        );
+        //const tokens = response.metadata.tokensUsed;
+        // console.log(
+        //   chalk.blue(
+        //     `📊 Tokens: ${tokens.input} in + ${tokens.output} out = ${
+        //       tokens.input + tokens.output
+        //     } total`
+        //   )
+        // );
       }
     } else {
       console.log(chalk.red(`❌ Failed after ${totalTime}ms`));
