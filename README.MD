@@ -22,7 +22,7 @@ OpenAgent is a powerful AI development assistant that provides four core capabil
 
 - **Real File Operations**: Direct disk I/O with intelligent project understanding
 - **MCP Integration**: Extensible external tool integration via Model Context Protocol
-- **Sub-Agent System**: Specialized AI agents for different development domains
+- **Sub-Agent System**: Specialized AI agents for different development domains.Read all docs for subAgents here [docs/README.MD](docs/README.MD)
 - **Smart Context**: Automated project analysis with persistent memory
 
 ## Quick Start

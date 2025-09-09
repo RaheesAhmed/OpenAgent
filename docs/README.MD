@@ -70,22 +70,31 @@ update_real_file    // Modify existing files with diff tracking
 
 Connect external tools and services through standardized protocol:
 
-**Configuration** (`.openagent/mcp-servers.json`):
+**Configuration** ## Configuration
+
+### Main Configuration (`.openagent/config.json`)
+```json
+{
+  "model": "anthropic:claude-3-5-sonnet-20241022",
+  "temperature": 0.1,
+  "maxTokens": 4000,
+  "memoryEnabled": true,
+  "streamingEnabled": true
+}
+```
+
+### MCP Servers (`.openagent/mcp-servers.json`)
 ```json
 {
   "mcpServers": {
-    "filesystem-server": {
-      "type": "url",
-      "url": "https://your-mcp-server.com/sse",
-      "name": "filesystem-mcp",
-      "tool_configuration": {
-        "enabled": true,
-        "allowed_tools": ["read_directory", "search_files"]
-      }
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]
     }
   }
 }
 ```
+
 
 **Supported Integrations:**
 - Database tools (PostgreSQL, MongoDB, Redis)
@@ -190,30 +199,6 @@ find_files_by_import     // Find files using specific modules
 get_file_info           // Detailed file analysis (exports, imports, dependencies)
 ```
 
-## Configuration
-
-### Main Configuration (`.openagent/config.json`)
-```json
-{
-  "model": "anthropic:claude-3-5-sonnet-20241022",
-  "temperature": 0.1,
-  "maxTokens": 4000,
-  "memoryEnabled": true,
-  "streamingEnabled": true
-}
-```
-
-### MCP Servers (`.openagent/mcp-servers.json`)
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/allowed/path"]
-    }
-  }
-}
-```
 
 ## Commands
 
